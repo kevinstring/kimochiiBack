@@ -18,5 +18,10 @@ Route::get('/', function () {
 
 
 });
-Route::get('articulos','App\Http\Controllers\articulosController@getArticulos');
-
+Route::get('getProducto','App\Http\Controllers\articulosController@getArticulos');
+Route::post('postCategoria','App\Http\Controllers\articulosController@postCategoria');
+Route::post('postSubCategoria','App\Http\Controllers\articulosController@postSubCategoria');
+Route::get('getCategorias','App\Http\Controllers\articulosController@getCategorias');
+Route::post('asignarSubCategoria','App\Http\Controllers\articulosController@asignarSubCategoria');
+Route::post('getSubCategorias','App\Http\Controllers\articulosController@getSubCategorias');
+Route::post('updateAmazon','App\Http\Controllers\amazons3@store');
