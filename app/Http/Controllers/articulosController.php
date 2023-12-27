@@ -43,7 +43,11 @@ class articulosController extends Controller
 
 public function getCategorias(){
     $getCategoria=db::table("CATEGORIA")->get();
-    $getSubCategoria=db::table("SUBCATEGORIA")->get();
+    $getSubCategoria = DB::table("SUBCATEGORIA")
+    ->leftJoin("CATEGORIA as cat", "cat.ID_CATEGORIA", "=", "SUBCATEGORIA.ID_CATEGORIA")
+    ->select("SUBCATEGORIA.*","cat.NOMBRE as NOMBRECAT")
+    ->get();
+
 
     return response()->json(["categoria"=>$getCategoria,"subcategoria"=>$getSubCategoria]);
     
