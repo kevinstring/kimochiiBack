@@ -23,7 +23,7 @@ class amazons3 extends Controller
                 'region' => 'us-east-1',
                 'credentials' => [
                     'key'    => 'AKIAX3574SKRRXCWOIBB',
-                    'secret' => 'a3l+1Eeo6ry2f01OMDzUiPzNV5c5Y1H4gXmDVMvQDJzC',
+                    'secret' => '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',
                 ],
             ]);
     

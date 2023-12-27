@@ -5,12 +5,56 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;  
+use Illuminate\Support\Carbon;
+
 class articulosController extends Controller
 {
     
+    public function guardarProducto(Request $request){
+        $nombre = $request->nombre;
+        $foto=$request->foto;
+        $descripcion=$request->descripcion;
+        $categoria=$request->categoria;
+        $subcategoria=$request->subcategoria;
+        $costo=$request->costo;
+        $precio=$request->precio;
+        $cantidad=$request->cantidad;
+        $personaje=$request->personaje?:null;
+        $fechaIngreso = Carbon::now();
+        $idProducto = DB::table("PRODUCTO")->insertGetId([
+            'NOMBRE' => $nombre,
+            'FOTO' => $foto,
+            'DESCRIPCION' => $descripcion,
+            'ID_CATEGORIA' => $categoria,
+            'ID_SUBCATEGORIA' => $subcategoria,
+            'COSTO' => $costo,
+            'PRECIO' => $precio,
+            'CANTIDAD' => $cantidad,
+            'ID_PERSONAJE' => $personaje || null,
+            // 'FECHA_INGRESO' => $fechaIngreso->toDateTimeString(),
+
+        ]);
+
+        //generacion de codigo unico
+
+
+
+        if($idProducto){
+        return response()->json(['mensaje' => 'Error al ingresar el producto',$categoria], 200);
+    }else{
+        return response()->json(['mensaje' => 'Error al ingresar el producto'], 500);
+    }
+
+    }
 
     public function getArticulos(){ 
-        $request = DB::table('PRODUCTO')->get();
+        $request = DB::table('PRODUCTO')
+        ->leftjoin("CATEGORIA as cat","cat.ID_CATEGORIA","=","PRODUCTO.ID_CATEGORIA")
+        ->leftjoin("SUBCATEGORIA as subcat","subcat.ID","=","PRODUCTO.ID_SUBCATEGORIA")
+        ->leftjoin("PERSONAJE as persona","persona.ID_PERSONAJE","=","PRODUCTO.ID_PERSONAJE")
+        ->leftjoin("ANIME as anime","anime.ID_ANIME","=","persona.ID_ANIME")
+        ->select("PRODUCTO.ID_PRODUCTO","anime.NOMBRE as NOMBRE_ANIME","persona.NOMBRE as NOMBRE_PERSONAJE","cat.NOMBRE as NOMBRE_CATEGORIA","subcat.NOMBRE as NOMBRE_SUBCAT","PRODUCTO.NOMBRE as NOMBRE_PRODUCTO","PRODUCTO.FOTO","PRODUCTO.DESCRIPCION","PRODUCTO.COSTO","PRODUCTO.PRECIO","PRODUCTO.CODIGO","PRODUCTO.CANTIDAD")
+        ->get();
 
         return $request;
     }

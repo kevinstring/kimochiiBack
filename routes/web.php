@@ -25,3 +25,4 @@ Route::get('getCategorias','App\Http\Controllers\articulosController@getCategori
 Route::post('asignarSubCategoria','App\Http\Controllers\articulosController@asignarSubCategoria');
 Route::post('getSubCategorias','App\Http\Controllers\articulosController@getSubCategorias');
 Route::post('updateAmazon','App\Http\Controllers\amazons3@store');
+Route::post('guardarProducto','App\Http\Controllers\articulosController@guardarProducto');
