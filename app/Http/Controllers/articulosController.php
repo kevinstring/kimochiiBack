@@ -59,7 +59,7 @@ class articulosController extends Controller
             $codigoUnico=$categoriaid.'-'.$subcategoriaid.'-'.$personaje.'-'.$idProducto;
             $codigoUnico=strtoupper($codigoUnico);
         }else{
-            $codigoUnico=$categoriaid.$subcategoriaid.$idProducto;
+            $codigoUnico=$categoriaid.'-'.$subcategoriaid.'-'.$idProducto;
         }
 
 
