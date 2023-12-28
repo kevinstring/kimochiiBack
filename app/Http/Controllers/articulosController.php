@@ -12,7 +12,7 @@ class articulosController extends Controller
     
     public function guardarProducto(Request $request){
         $nombre = $request->nombre;
-        $foto=$request->foto;
+        $foto=$request->foto?:null;
         $descripcion=$request->descripcion;
         $categoria=$request->categoria;
         $subcategoria=$request->subcategoria;
@@ -20,6 +20,11 @@ class articulosController extends Controller
         $precio=$request->precio;
         $cantidad=$request->cantidad;
         $personaje=$request->personaje?:null;
+
+
+
+     
+
         $fechaIngreso = Carbon::now();
         $idProducto = DB::table("PRODUCTO")->insertGetId([
             'NOMBRE' => $nombre,
@@ -34,13 +39,39 @@ class articulosController extends Controller
             // 'FECHA_INGRESO' => $fechaIngreso->toDateTimeString(),
 
         ]);
+        $productoInsertado = DB::table("PRODUCTO")->where('ID_PRODUCTO', $idProducto)
+        ->leftjoin("CATEGORIA as cat","cat.ID_CATEGORIA","=","PRODUCTO.ID_CATEGORIA")
+        ->leftjoin("SUBCATEGORIA as subcat","subcat.ID","=","PRODUCTO.ID_SUBCATEGORIA")
+        ->leftjoin("PERSONAJE as persona","persona.ID_PERSONAJE","=","PRODUCTO.ID_PERSONAJE")
+        ->leftjoin("ANIME as anime","anime.ID_ANIME","=","persona.ID_ANIME")
+        ->select("PRODUCTO.ID_PRODUCTO","anime.NOMBRE as NOMBRE_ANIME","persona.NOMBRE as NOMBRE_PERSONAJE","cat.NOMBRE as NOMBRE_CATEGORIA","subcat.NOMBRE as NOMBRE_SUBCAT","PRODUCTO.NOMBRE as NOMBRE_PRODUCTO","PRODUCTO.FOTO","PRODUCTO.DESCRIPCION","PRODUCTO.COSTO","PRODUCTO.PRECIO","PRODUCTO.CODIGO","PRODUCTO.CANTIDAD")
+        ->first();
+
+        $categoriaid=$productoInsertado->NOMBRE_CATEGORIA;
+        $subcategoriaid=$productoInsertado->NOMBRE_SUBCAT;
+       
+        
+        $categoriaid=substr($categoriaid,0,3);
+        $subcategoriaid=substr($subcategoriaid,0,3);
+        $codigoUnico= "";
+        if($personaje!==null && $personaje!=="" && $personaje!=="null"){
+            $personaje=substr($personaje,0,3);
+            $codigoUnico=$categoriaid.'-'.$subcategoriaid.'-'.$personaje.'-'.$idProducto;
+            $codigoUnico=strtoupper($codigoUnico);
+        }else{
+            $codigoUnico=$categoriaid.$subcategoriaid.$idProducto;
+        }
+
+
+        $insertarCodigo=db::table("PRODUCTO")->where('ID_PRODUCTO',$idProducto)->update(['CODIGO'=>$codigoUnico]);
+
 
         //generacion de codigo unico
 
 
 
         if($idProducto){
-        return response()->json(['mensaje' => 'Error al ingresar el producto',$categoria], 200);
+        return response()->json(['mensaje' => 'Producto Ingresado con exito',$categoria, $insertarCodigo], 200);
     }else{
         return response()->json(['mensaje' => 'Error al ingresar el producto'], 500);
     }
