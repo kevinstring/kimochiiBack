@@ -20,9 +20,10 @@ Route::get('/', function () {
 });
 Route::get('getProducto','App\Http\Controllers\articulosController@getArticulos');
 Route::post('postCategoria','App\Http\Controllers\articulosController@postCategoria');
-Route::post('postSubCategoria','App\Http\Controllers\articulosController@postSubCategoria');
+Route::post('postTag','App\Http\Controllers\articulosController@postTag');
 Route::get('getCategorias','App\Http\Controllers\articulosController@getCategorias');
 Route::post('asignarSubCategoria','App\Http\Controllers\articulosController@asignarSubCategoria');
 Route::post('getSubCategorias','App\Http\Controllers\articulosController@getSubCategorias');
 Route::post('updateAmazon','App\Http\Controllers\amazons3@store');
 Route::post('guardarProducto','App\Http\Controllers\articulosController@guardarProducto');
+Route::post('postFavorito','App\Http\Controllers\articulosController@postFavorito');
