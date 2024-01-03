@@ -38,3 +38,6 @@ Route::post('postCompras','App\Http\Controllers\proveedoresController@postCompra
 Route::post('registrarVenta','App\Http\Controllers\VentasController@postVenta');
 Route::post('getProductosEnStock','App\Http\Controllers\VentasController@getProductosEnStock');
 Route::post('postComanda','App\Http\Controllers\VentasController@postComanda');
+Route::post('cancelarVentaYFacturar','App\Http\Controllers\VentasController@cancelarVentaYFacturar');
+Route::post('finalizarVenta','App\Http\Controllers\VentasController@finalizarVenta');
+Route::post('getVentas','App\Http\Controllers\VentasController@getVentas');
