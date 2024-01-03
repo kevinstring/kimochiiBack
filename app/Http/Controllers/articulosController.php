@@ -28,10 +28,12 @@ class articulosController extends Controller
 
 
      
+        $porcentajeGanancia=0;
 
         $fechaIngreso = Carbon::now();
         if($categoria!=="3"){
-           
+
+           $porcentajeGanancia=($precio-$costo)/$costo*100;
             
         $idProducto = DB::table("PRODUCTO")->insertGetId([
             'NOMBRE' => $nombre,
@@ -43,6 +45,7 @@ class articulosController extends Controller
             'PRECIO' => $precio,
             'CANTIDAD' => $cantidad,
             'ID_PERSONAJE' => $personaje || null,
+            'PORCENTAJE_GANANCIA' => $porcentajeGanancia,
             // 'FECHA_INGRESO' => $fechaIngreso->toDateTimeString(),
 
         ]);
@@ -146,7 +149,7 @@ $tresLetras1 = "";
         ->leftjoin("CATEGORIA as subcat","subcat.ID","=","PRODUCTO.ID_CATEGORIA")
         ->leftjoin("PERSONAJE as persona","persona.ID_PERSONAJE","=","PRODUCTO.ID_PERSONAJE")
         ->leftjoin("ANIME as anime","anime.ID_ANIME","=","persona.ID_ANIME")
-        ->select("PRODUCTO.ID_PRODUCTO","anime.NOMBRE as NOMBRE_ANIME","persona.NOMBRE as NOMBRE_PERSONAJE","cat.NOMBRE as NOMBRE_TAG","subcat.NOMBRE as NOMBRE_SUBCAT","PRODUCTO.NOMBRE as NOMBRE_PRODUCTO","PRODUCTO.FOTO","PRODUCTO.DESCRIPCION","PRODUCTO.COSTO","PRODUCTO.PRECIO","PRODUCTO.CODIGO","PRODUCTO.CANTIDAD")
+        ->select("PRODUCTO.ID_PRODUCTO","anime.NOMBRE as NOMBRE_ANIME","persona.NOMBRE as NOMBRE_PERSONAJE","cat.NOMBRE as NOMBRE_TAG","subcat.NOMBRE as NOMBRE_SUBCAT","PRODUCTO.NOMBRE as NOMBRE_PRODUCTO","PRODUCTO.FOTO","PRODUCTO.DESCRIPCION","PRODUCTO.COSTO","PRODUCTO.PRECIO","PRODUCTO.CODIGO","PRODUCTO.CANTIDAD","PRODUCTO.PORCENTAJE_GANANCIA")
         ->get();
         $ropa = DB::table('ROPA')
         ->leftjoin("CATEGORIA as subcat", "subcat.ID", "=", "ROPA.ID_SUBCATEGORIA")
