@@ -288,4 +288,31 @@ public function postFavorito(Request $request){
     }
 }
 
+public function getRopa(){
+    $ropa = DB::table('ROPA')
+    ->leftjoin("CATEGORIA as subcat", "subcat.ID", "=", "ROPA.ID_SUBCATEGORIA")
+    ->select("ROPA.ID as ID_PRODUCTO", "ROPA.CODIGO as CODIGO", "subcat.NOMBRE as NOMBRE_SUBCAT", "ROPA.NOMBRE as NOMBRE_PRODUCTO", "ROPA.FOTO", "ROPA.DESCRIPCION", "ROPA.COSTO", "ROPA.PRECIO", "ROPA.S as TALLA_S", "ROPA.M as TALLA_M", "ROPA.L as TALLA_L")
+    ->get();
+
+    foreach ($ropa as $producto) {
+        $cantidadTallaS = $producto->TALLA_S;
+        $cantidadTallaM = $producto->TALLA_M;
+        $cantidadTallaL = $producto->TALLA_L;
+    
+        $cantidadRopa = array_sum([$cantidadTallaS, $cantidadTallaM, $cantidadTallaL]);
+    
+        // Agregar la cantidad total al objeto producto
+        $producto->CANTIDAD = $cantidadRopa;
+    
+        // Agregar las cantidades por talla al array TALLAS dentro del objeto producto
+        $producto->TALLAS = [
+            "S" => $cantidadTallaS,
+            "M" => $cantidadTallaM,
+            "L" => $cantidadTallaL
+        ];
+    }
+
+    return response()->json(["ropa"=>$ropa]);
+
+}
 }
