@@ -17,6 +17,7 @@ class articulosController extends Controller
         $descripcion=$request->descripcion;
         $tags=$request->tags;
         $categoria=$request->categoria;
+
         $costo=$request->costo;
         $precio=$request->precio;
         $cantidad=$request->cantidad;
@@ -24,6 +25,7 @@ class articulosController extends Controller
         $tallaS=$request->tallaS?:null;
         $tallaM=$request->tallaM?:null;
         $tallaL=$request->tallaL?:null;
+        $esRopa=$request->esRopa;
         // $cantidadRopa=sum([$tallaS,$tallaM,$tallaL]);
 
 
@@ -85,49 +87,49 @@ $tresLetras1 = "";
   
 
         $insertarCodigo=db::table("PRODUCTO")->where('ID_PRODUCTO',$idProducto)->update(['CODIGO'=>$codigoUnico]);
+    }   
+    if($esRopa==="true"){
+        $prendaInsertada=DB::table("ROPA")->insertGetId([
+            'NOMBRE' => $nombre,
+            'FOTO' => $foto,
+            'DESCRIPCION' => $descripcion,
+            'ID_SUBCATEGORIA' => $subcategoriaid || null,
+            'COSTO' => $costo,
+            'PRECIO' => $precio,
+            'ID_PERSONAJE' => $personaje || null,
+            'S' => $tallaS,
+            'M' => $tallaM,
+            'L' => $tallaL,
+
+        ]);
+
+        $productoInsertado = DB::table("ROPA")->where('ROPA.ID', $prendaInsertada)
+        ->leftjoin("CATEGORIA as subcat","subcat.ID","=","ROPA.ID_CATEGORIA")
+        ->select("ROPA.ID","subcat.NOMBRE as NOMBRE_SUBCAT","ROPA.NOMBRE as NOMBRE_PRODUCTO","ROPA.FOTO","ROPA.DESCRIPCION","ROPA.COSTO","ROPA.PRECIO","ROPA.S","ROPA.M","ROPA.L")
+        ->first();
+
+        $nombreProducto=$productoInsertado->NOMBRE_PRODUCTO;
+        $subcategoriaid=$productoInsertado->NOMBRE_SUBCAT;
+
+        $nombreProducto=substr($nombreProducto,0,3);
+        $subcategoriaid=substr($subcategoriaid,0,3);
+        $codigoUnico= "";
+
+        if($personaje!==null && $personaje!=="" && $personaje!=="null"){
+            $personaje=substr($personaje,0,3);
+            $codigoUnico=$nombreProducto.'-'.$subcategoriaid.'-'.$personaje.'-'.$prendaInsertada;
+            $codigoUnico=strtoupper($codigoUnico);
+        }else{
+            $codigoUnico=$nombreProducto.'-'.$subcategoriaid.'-'.$prendaInsertada;
+            $codigoUnico=strtoupper($codigoUnico);
+
+        }
+
+
+        $insertarCodigo=db::table("ROPA")->where('ID',$prendaInsertada)->update(['CODIGO'=>$codigoUnico]);
+
+        return response()->json(['mensaje' => 'Producto Ingresado con exitoo',$productoInsertado, $insertarCodigo], 200);
     }
-    // elseif($categoria==="3"){
-    //     $prendaInsertada=DB::table("ROPA")->insertGetId([
-    //         'NOMBRE' => $nombre,
-    //         'FOTO' => $foto,
-    //         'DESCRIPCION' => $descripcion,
-    //         'ID_SUBCATEGORIA' => $subcategoria,
-    //         'COSTO' => $costo,
-    //         'PRECIO' => $precio,
-    //         'ID_PERSONAJE' => $personaje || null,
-    //         'S' => $tallaS,
-    //         'M' => $tallaM,
-    //         'L' => $tallaL,
-
-    //     ]);
-
-    //     $productoInsertado = DB::table("ROPA")->where('ROPA.ID', $prendaInsertada)
-    //     ->leftjoin("CATEGORIA as subcat","subcat.ID","=","ROPA.ID_CATEGORIA")
-    //     ->select("ROPA.ID","subcat.NOMBRE as NOMBRE_SUBCAT","ROPA.NOMBRE as NOMBRE_PRODUCTO","ROPA.FOTO","ROPA.DESCRIPCION","ROPA.COSTO","ROPA.PRECIO","ROPA.S","ROPA.M","ROPA.L")
-    //     ->first();
-
-    //     $nombreProducto=$productoInsertado->NOMBRE_PRODUCTO;
-    //     $subcategoriaid=$productoInsertado->NOMBRE_SUBCAT;
-
-    //     $nombreProducto=substr($nombreProducto,0,3);
-    //     $subcategoriaid=substr($subcategoriaid,0,3);
-    //     $codigoUnico= "";
-
-    //     if($personaje!==null && $personaje!=="" && $personaje!=="null"){
-    //         $personaje=substr($personaje,0,3);
-    //         $codigoUnico=$nombreProducto.'-'.$subcategoriaid.'-'.$personaje.'-'.$prendaInsertada;
-    //         $codigoUnico=strtoupper($codigoUnico);
-    //     }else{
-    //         $codigoUnico=$nombreProducto.'-'.$subcategoriaid.'-'.$prendaInsertada;
-    //         $codigoUnico=strtoupper($codigoUnico);
-
-    //     }
-
-
-    //     $insertarCodigo=db::table("ROPA")->where('ID',$prendaInsertada)->update(['CODIGO'=>$codigoUnico]);
-
-    //     return response()->json(['mensaje' => 'Producto Ingresado con exito',$productoInsertado, $insertarCodigo], 200);
-    // }
 
 
 
