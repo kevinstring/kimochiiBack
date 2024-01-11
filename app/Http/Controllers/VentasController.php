@@ -75,7 +75,7 @@ class VentasController extends Controller
             ->get();
 
             foreach($ventas as $item){
-                $granTotal=$granTotal+$item->TOTAL;
+                $granTotal=$item->total_ventas+$granTotal;
             }
 
   

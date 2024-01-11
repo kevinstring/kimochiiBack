@@ -26,6 +26,7 @@ class articulosController extends Controller
         $tallaM=$request->tallaM?:null;
         $tallaL=$request->tallaL?:null;
         $esRopa=$request->esRopa;
+        $proveedor=$request->proveedor;
         // $cantidadRopa=sum([$tallaS,$tallaM,$tallaL]);
 
 
@@ -33,7 +34,7 @@ class articulosController extends Controller
         $porcentajeGanancia=0;
 
         $fechaIngreso = Carbon::now();
-        if($categoria!=="3"){
+        if($categoria){
 
            $porcentajeGanancia=($precio-$costo)/$costo*100;
             
@@ -48,6 +49,7 @@ class articulosController extends Controller
             'CANTIDAD' => $cantidad,
             'ID_PERSONAJE' => $personaje || null,
             'PORCENTAJE_GANANCIA' => $porcentajeGanancia,
+            'ID_PROVEEDOR' => $proveedor || null,
             // 'FECHA_INGRESO' => $fechaIngreso->toDateTimeString(),
 
         ]);
@@ -159,9 +161,36 @@ $tresLetras1 = "";
         ->get();
     
         $favorito=DB::table('FAVORITOS')->get();
+        $sumaTotalDeCantidad=0;
+
+        foreach($request as $cantidad){
+            $sumaTotalDeCantidad+=$cantidad->CANTIDAD;
+        }
 
        foreach($request as $prod){
             $idFavorito=$prod->CODIGO;
+            // if (is_string($prod->FOTO)) {
+            //     $prod->FOTO = str_replace("https://kimochii.s3.amazonaws.com", '', $prod->FOTO);
+            // }
+            $prod->FOTO = json_decode($prod->FOTO);
+            if (is_array($prod->FOTO)) {
+                $prod->FOTO = array_map(function ($url) {
+                    return [
+                        'image' => $url,
+                        'thumbImage' => $url, // Puedes ajustar esto según tus necesidades
+                        'alt' => 'alt of image',
+                        'title' => 'title of image'
+                    ];
+                }, $prod->FOTO);
+            } else {
+                // Si FOTO no es un array, puedes manejarlo de acuerdo a tus necesidades
+                $prod->FOTO = [];
+            }
+
+            //convertir $prod->FOTO a un arreglo aunque sea de un solo elemento 
+          
+            
+
             foreach($ropa as $producto){
                 if($producto->CODIGO===$idFavorito){
                     $producto->FAVORITO=true;
@@ -184,6 +213,7 @@ $tresLetras1 = "";
         $cantidadTallaL = $producto->TALLA_L;
     
         $cantidadRopa = array_sum([$cantidadTallaS, $cantidadTallaM, $cantidadTallaL]);
+
     
         // Agregar la cantidad total al objeto producto
         $producto->CANTIDAD = $cantidadRopa;
@@ -203,7 +233,7 @@ $tresLetras1 = "";
         
 
 
-        return response()->json(["productos"=>$request,"ropa"=>$ropa]);
+        return response()->json(["productos"=>$request,"ropa"=>$ropa,"total"=>$sumaTotalDeCantidad]);
 
       
     }
