@@ -200,7 +200,7 @@ public function tuOtraFuncion() {
 
 public function getDetalleProducto(Request $request){
     $id=$request->id;
-    $producto=DB::table("PRODUCTO")->where('NOMBRE',$id)->first();
+    $producto=DB::table("PRODUCTO")->where('NOMBRE',$id)->select("PRODUCTO.NOMBRE", "PRODUCTO.DESCRIPCION","PRODUCTO.PRECIO","PRODUCTO.FOTO","PRODUCTO.ID_TAG")->first();
     $producto->FOTO = json_decode($producto->FOTO);
     if (is_array($producto->FOTO)) {
         $producto->FOTO = array_map(function ($url) {
@@ -224,5 +224,12 @@ public function getDetalleProducto(Request $request){
     }
 }
 
+public function getRecomendados(Request $request){
+    $arrayTags = json_decode($request->tags, true);
+   
+     
+
     
+    
+}
 }

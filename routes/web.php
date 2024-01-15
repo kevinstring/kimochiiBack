@@ -55,3 +55,4 @@ Route::post('getOneCategory','App\Http\Controllers\webController@getOneCategory'
 Route::post('buscar','App\Http\Controllers\webController@buscar');
 Route::get('getMasVendidos','App\Http\Controllers\webController@getMasVendidos');
 Route::post('getDetalleProducto','App\Http\Controllers\webController@getDetalleProducto');
+Route::post('getRecomendados','App\Http\Controllers\webController@getRecomendados');
