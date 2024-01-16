@@ -63,53 +63,126 @@ class VentasController extends Controller
         $indice = (int) $indice;
         
         if ($indice === 2) {
-           $granTotal=0;
-            // Consulta de ventas por MES
-      
+            $granTotal = 0;
             $ventas = DB::table('VENTA')
-            ->leftjoin('FACTURA', 'VENTA.id_factura', '=', 'FACTURA.id_factura')
-            ->leftjoin("PRODUCTO", "PRODUCTO.CODIGO", "=", "VENTA.CODIGO_PRODUCTO")
-            ->whereMonth('FACTURA.Fecha', date('m'))
-            ->select(DB::raw('DATE(FACTURA.Fecha) as fecha'), DB::raw('SUM(VENTA.total) as total_ventas'))
-            ->groupBy(DB::raw('DATE(FACTURA.Fecha)'))
-            ->get();
-
-            foreach($ventas as $item){
-                $granTotal=$item->total_ventas+$granTotal;
-            }
-
-  
-    
-
-
-            if ($ventas) {
-                return response()->json(['success' => true, 'ventas' => $ventas,'granTotal'=>$granTotal], 200);
-            } else {
-                return response()->json(['success' => false, 'message' => 'No se encontraron ventas'], 200);
-            }
-        } if ($indice === 1) {
-            $granTotal=0;
-
-            // Consulta de ventas por SEMANA
-            $ventas = DB::table('VENTA')
-                ->leftjoin('FACTURA', 'VENTA.ID_FACTURA', '=', 'FACTURA.ID_FACTURA')
-                ->leftjoin("PRODUCTO", "PRODUCTO.CODIGO", "=", "VENTA.CODIGO_PRODUCTO")
-                ->whereBetween('FACTURA.FECHA', [date('Y-m-d', strtotime('monday this week')), date('Y-m-d', strtotime('sunday this week'))])
+                ->leftJoin('FACTURA', 'VENTA.id_factura', '=', 'FACTURA.id_factura')
+                ->leftJoin("PRODUCTO", "PRODUCTO.CODIGO", "=", "VENTA.CODIGO_PRODUCTO")
+                ->whereMonth('FACTURA.Fecha', date('m'))
+                ->select(DB::raw('DATE(FACTURA.Fecha) as fecha'), DB::raw('SUM(VENTA.total) as total_ventas') , 'PRODUCTO.NOMBRE')
+                ->groupBy(DB::raw('DATE(FACTURA.Fecha)'), 'PRODUCTO.NOMBRE' )
                 ->get();
-
-                foreach($ventas as $item){
-                    $granTotal=$granTotal+$item->TOTAL;
-
+        
+            $ventasPorFecha = [];
+        
+            foreach ($ventas as $item) {
+                $granTotal += $item->total_ventas;
+        
+                // Organizar por fecha
+                $fechaVenta = date('Y-m-d', strtotime($item->fecha));
+                if (!isset($ventasPorFecha[$fechaVenta])) {
+                    $ventasPorFecha[$fechaVenta] = [
+                        'total_ventas' => 0,
+                        'detalle' => [],
+                    ];
                 }
-    
-      
-    
-            if ($ventas) {
-                return response()->json(['success' => true, 'ventas' => $ventas,'granTotal'=>$granTotal], 200);
-            } else {
-                return response()->json(['success' => false, 'message' => 'No se encontraron ventas'], 200);
+        
+                $ventasPorFecha[$fechaVenta]['total_ventas'] += $item->total_ventas;
+        
+                // Detalles de productos vendidos
+                $ventasPorFecha[$fechaVenta]['detalle'][] = [
+                    'producto' => $item->NOMBRE,
+                    'total' => $item->total_ventas,
+                    // Otros campos que puedas necesitar
+                ];
             }
-        } if ($indice === 0) {
+        
+            // Estructurar la respuesta para el gráfico
+            $respuestaChart = [];
+        
+            foreach ($ventasPorFecha as $fecha => $datos) {
+                $serie = [
+                    'name' => $fecha,
+                    'value' => $datos['total_ventas'],
+                ];
+        
+                $respuestaChart[] = $serie;
+            }
+        
+            $response = [
+                'success' => true,
+                'granTotal' => $granTotal,
+                'ventasPorFecha' => $ventasPorFecha,
+                'chartData' => [
+                    'name' => 'Mes',
+                    'series' => $respuestaChart,
+                ],
+            ];
+        
+            return response()->json($response, 200);
+        } 
+         else 
+        if ($indice === 1) {
+            $granTotal = 0;
+            $ventas = DB::table('VENTA')
+                ->leftJoin('FACTURA', 'VENTA.ID_FACTURA', '=', 'FACTURA.ID_FACTURA')
+                ->leftJoin("PRODUCTO", "PRODUCTO.CODIGO", "=", "VENTA.CODIGO_PRODUCTO")
+                ->whereBetween('FACTURA.FECHA', [
+                    date('Y-m-d', strtotime('-1 week')),  // Hace una semana desde hoy
+                    date('Y-m-d')  // Hoy
+                ])
+                ->get();
+        
+            $ventasPorFecha = [];
+        
+            foreach ($ventas as $item) {
+                $granTotal += $item->TOTAL;
+        
+                // Organizar por fecha
+                $fechaVenta = date('Y-m-d', strtotime($item->FECHA));
+                if (!isset($ventasPorFecha[$fechaVenta])) {
+                    $ventasPorFecha[$fechaVenta] = [
+                        'total_ventas' => 0,
+                        'detalle' => [],
+                    ];
+                }
+        
+                $ventasPorFecha[$fechaVenta]['total_ventas'] += $item->TOTAL;
+        
+                // Detalles de productos vendidos
+                $ventasPorFecha[$fechaVenta]['detalle'][] = [
+                    'producto' => $item->NOMBRE,
+                    'total' => $item->TOTAL,
+                    // Otros campos que puedas necesitar
+                ];
+            }
+        
+            // Estructurar la respuesta para el gráfico
+            $respuestaChart = [];
+        
+            foreach ($ventasPorFecha as $fecha => $datos) {
+                $serie = [
+                    'name' => $fecha,
+                    'value' => $datos['total_ventas'],
+                ];
+        
+                $respuestaChart[] = $serie;
+            }
+        
+            $response = [
+                'success' => true,
+                'granTotal' => $granTotal,
+                'ventasPorFecha' => $ventasPorFecha,
+                'chartData' => [
+                    'name' => 'Semana',
+                    'series' => $respuestaChart,
+                ],
+            ];
+        
+            return response()->json($response, 200);
+        }
+        
+         else
+         if ($indice === 0) {
             $fechaHoy = date('Y-m-d');
             // Consulta de ventas por DIA
             $ventas = DB::table('VENTA')
