@@ -225,11 +225,74 @@ public function getDetalleProducto(Request $request){
 }
 
 public function getRecomendados(Request $request){
+
     $arrayTags = json_decode($request->tags, true);
-   
+
+    //obtener solo dos valores de array
+    $arrayTags = array_slice($arrayTags, 0, 2);
+
      
 
+    $getProducto= DB::table("PRODUCTO")
+    ->leftJoin("PERSONAJE", "PERSONAJE.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
+    ->leftJoin("ANIME", "ANIME.ID_ANIME", "=", "PERSONAJE.ID_ANIME")
+    ->leftJoin("CATEGORIA", "CATEGORIA.ID", "=", "PRODUCTO.ID_CATEGORIA")
+    ->select(
+        "PRODUCTO.ID_PRODUCTO",
+        "PRODUCTO.NOMBRE",
+        "PRODUCTO.PRECIO",
+        "PRODUCTO.DESCRIPCION",
+        "PRODUCTO.FOTO",
+        "PRODUCTO.ID_TAG",
+        "PERSONAJE.NOMBRE as personaje",
+        "ANIME.NOMBRE as anime",
+        "CATEGORIA.NOMBRE as categoria"
+    )
+    ->where(function($query) use ($arrayTags) {
+        foreach ($arrayTags as $tag) {
+            $query->orWhere('PRODUCTO.ID_TAG', 'like', '%' . $tag . '%');
+        }
+    })
     
+    ->get();
+
+
+    foreach($getProducto as $prod){
+        // $idFavorito=$prod->CODIGO;
+        // if (is_string($prod->FOTO)) {
+        //     $prod->FOTO = str_replace("https://kimochii.s3.amazonaws.com", '', $prod->FOTO);
+        // }
+        $prod->FOTO = json_decode($prod->FOTO);
+        if (is_array($prod->FOTO)) {
+            $prod->FOTO = array_map(function ($url) {
+                return [
+                    'image' => $url,
+                    'thumbImage' => $url, // Puedes ajustar esto según tus necesidades
+                    'alt' => 'alt of image',
+                    'title' => 'title of image'
+                ];
+            }, $prod->FOTO);
+        } else {
+            // Si FOTO no es un array, puedes manejarlo de acuerdo a tus necesidades
+            $prod->FOTO = [];
+        }
     
+    }
+
+    
+    if($getProducto){
+        return response()->json(['success' => true, 'productos'=>$getProducto], 200);
+
+    }else{
+        return response()->json(['success' => false, 'message' => 'No se encontraron categorias'], 200);
+
+    }
+
+
 }
 }
+
+
+
+
+
