@@ -33,24 +33,33 @@ class webController extends Controller
     }
 
     public function getOneCategory(Request $request){
-        $nombre=$request->nombre;
-        $categoria=DB::table("CATEGORIA")->where('NOMBRE',$nombre)->select("ID")->first();
-
-        if($nombre!=="all"){
-        $getProductos=DB::table("PRODUCTO")->where('ID_CATEGORIA',$categoria->ID)->leftjoin("PERSONAJE as person","person.ID_PERSONAJE","=","PRODUCTO.ID_PERSONAJE")
-        ->leftjoin("ANIME as an","an.ID_ANIME","=","person.ID_ANIME")->select("PRODUCTO.ID_PRODUCTO","PRODUCTO.NOMBRE","PRODUCTO.PRECIO","PRODUCTO.DESCRIPCION","PRODUCTO.FOTO","person.NOMBRE as personaje","an.NOMBRE as anime")->get();
-    }
-    else{
-        $getProductos=DB::table("PRODUCTO")->leftjoin("PERSONAJE as person","person.ID_PERSONAJE","=","PRODUCTO.ID_PERSONAJE")
-        ->leftjoin("ANIME as an","an.ID_ANIME","=","person.ID_ANIME")->select("PRODUCTO.ID_PRODUCTO","PRODUCTO.NOMBRE","PRODUCTO.PRECIO","PRODUCTO.DESCRIPCION","PRODUCTO.FOTO","person.NOMBRE as personaje","an.NOMBRE as anime")->get();
-   
-        
-    }
-        foreach($getProductos as $prod){
-            // $idFavorito=$prod->CODIGO;
-            // if (is_string($prod->FOTO)) {
-            //     $prod->FOTO = str_replace("https://kimochii.s3.amazonaws.com", '', $prod->FOTO);
-            // }
+        $nombre = $request->nombre;
+        $pagina = $request->pagina ?? 1; // Página por defecto si no se proporciona
+        $limit = 10;
+        $offset = ($pagina - 1) * $limit;
+    
+        $categoria = ($nombre !== "all") ? DB::table("CATEGORIA")->where('NOMBRE', $nombre)->select("ID")->first() : null;
+    
+        if ($nombre !== "all") {
+            $getProductos = DB::table("PRODUCTO")
+                ->where('ID_CATEGORIA', $categoria->ID)
+                ->leftJoin("PERSONAJE as person", "person.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
+                ->limit($limit)
+                ->offset($offset)
+                ->leftJoin("ANIME as an", "an.ID_ANIME", "=", "person.ID_ANIME")
+                ->select("PRODUCTO.ID_PRODUCTO", "PRODUCTO.NOMBRE", "PRODUCTO.PRECIO", "PRODUCTO.DESCRIPCION", "PRODUCTO.FOTO", "person.NOMBRE as personaje", "an.NOMBRE as anime")
+                ->get();
+        } else {
+            $getProductos = DB::table("PRODUCTO")
+                ->leftJoin("PERSONAJE as person", "person.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
+                ->leftJoin("ANIME as an", "an.ID_ANIME", "=", "person.ID_ANIME")
+                ->limit($limit)
+                ->offset($offset)
+                ->select("PRODUCTO.ID_PRODUCTO", "PRODUCTO.NOMBRE", "PRODUCTO.PRECIO", "PRODUCTO.DESCRIPCION", "PRODUCTO.FOTO", "person.NOMBRE as personaje", "an.NOMBRE as anime")
+                ->get();
+        }
+    
+        foreach ($getProductos as $prod) {
             $prod->FOTO = json_decode($prod->FOTO);
             if (is_array($prod->FOTO)) {
                 $prod->FOTO = array_map(function ($url) {
@@ -62,22 +71,23 @@ class webController extends Controller
                     ];
                 }, $prod->FOTO);
             } else {
-                // Si FOTO no es un array, puedes manejarlo de acuerdo a tus necesidades
                 $prod->FOTO = [];
             }
         }
-
-        if($getProductos){
-            return response()->json(['success' => true, 'productos'=>$getProductos], 200);
-
-        }else{
-            return response()->json(['success' => false, 'message' => 'No se encontraron categorias'], 200);
-
+    
+        if ($getProductos->count() > 0) {
+            return response()->json(['success' => true, 'productos' => $getProductos], 200);
+        } else {
+            return response()->json(['success' => false, 'message' => 'No se encontraron categorías'], 200);
         }
     }
+    
 
     public function buscar(Request $request){
         $nombre = $request->busqueda;
+        $pagina = $request->pagina ?? 1; // Página por defecto si no se proporciona
+        $limit = 10;
+        $offset = ($pagina - 1) * $limit;
     
         $getProductos = DB::table("PRODUCTO")
             ->where(function($query) use ($nombre) {
@@ -86,7 +96,6 @@ class webController extends Controller
                       ->orWhere('ANIME.NOMBRE', 'like', '%' . $nombre . '%')
                       ->orWhere('CATEGORIA.NOMBRE', 'like', '%' . $nombre . '%')
                       ->orWhere('PERSONAJE.NOMBRE', 'like', '%' . $nombre . '%');
-                      
             })
             ->leftJoin("PERSONAJE", "PERSONAJE.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
             ->leftJoin("ANIME", "ANIME.ID_ANIME", "=", "PERSONAJE.ID_ANIME")
@@ -101,27 +110,42 @@ class webController extends Controller
                 "ANIME.NOMBRE as anime",
                 "CATEGORIA.NOMBRE as categoria"
             )
+            ->offset($offset)
+            ->limit($limit)
             ->get();
-            foreach($getProductos as $prod){
-                // $idFavorito=$prod->CODIGO;
-                // if (is_string($prod->FOTO)) {
-                //     $prod->FOTO = str_replace("https://kimochii.s3.amazonaws.com", '', $prod->FOTO);
-                // }
-                $prod->FOTO = json_decode($prod->FOTO);
-                if (is_array($prod->FOTO)) {
-                    $prod->FOTO = array_map(function ($url) {
-                        return [
-                            'image' => $url,
-                            'thumbImage' => $url, // Puedes ajustar esto según tus necesidades
-                            'alt' => 'alt of image',
-                            'title' => 'title of image'
-                        ];
-                    }, $prod->FOTO);
-                } else {
-                    // Si FOTO no es un array, puedes manejarlo de acuerdo a tus necesidades
-                    $prod->FOTO = [];
-                }
+    
+        foreach ($getProductos as $prod) {
+            $prod->FOTO = json_decode($prod->FOTO);
+            if (is_array($prod->FOTO)) {
+                $prod->FOTO = array_map(function ($url) {
+                    return [
+                        'image' => $url,
+                        'thumbImage' => $url, // Puedes ajustar esto según tus necesidades
+                        'alt' => 'alt of image',
+                        'title' => 'title of image'
+                    ];
+                }, $prod->FOTO);
+            } else {
+                $prod->FOTO = [];
             }
+        }
+    
+        // $productosCount = DB::table("PRODUCTO")
+        //     ->where(function($query) use ($nombre) {
+        //         $query->where('PRODUCTO.NOMBRE', 'like', '%' . $nombre . '%')
+        //               ->orWhere('PRODUCTO.DESCRIPCION', 'like', '%' . $nombre . '%')
+        //               ->orWhere('ANIME.NOMBRE', 'like', '%' . $nombre . '%')
+        //               ->orWhere('CATEGORIA.NOMBRE', 'like', '%' . $nombre . '%')
+        //               ->orWhere('PERSONAJE.NOMBRE', 'like', '%' . $nombre . '%');
+        //     })
+        //     ->count();
+    
+        // $pagination = [
+        //     'currentPage' => $pagina,
+        //     'perPage' => $limit,
+        //     'totalItems' => $productosCount,
+        //     'totalPages' => ceil($productosCount / $limit),
+        // ];
     
         if ($getProductos->count() > 0) {
             return response()->json(['success' => true, 'productos' => $getProductos], 200);
@@ -129,6 +153,7 @@ class webController extends Controller
             return response()->json(['success' => false, 'message' => 'No se encontraron productos'], 200);
         }
     }
+    
 
     public function getMasVendidos(){
         $ventas = DB::table("VENTA")->select("CODIGO_PRODUCTO", DB::raw("COUNT(CODIGO_PRODUCTO) as cantidad",))
@@ -229,35 +254,49 @@ public function getRecomendados(Request $request){
     $arrayTags = json_decode($request->tags, true);
 
     //obtener solo dos valores de array
-    $arrayTags = array_slice($arrayTags, 0, 2);
+    $arrayTags = array_slice($arrayTags, 0, 1);
 
      
 
-    $getProducto= DB::table("PRODUCTO")
-    ->leftJoin("PERSONAJE", "PERSONAJE.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
-    ->leftJoin("ANIME", "ANIME.ID_ANIME", "=", "PERSONAJE.ID_ANIME")
-    ->leftJoin("CATEGORIA", "CATEGORIA.ID", "=", "PRODUCTO.ID_CATEGORIA")
-    ->select(
-        "PRODUCTO.ID_PRODUCTO",
-        "PRODUCTO.NOMBRE",
-        "PRODUCTO.PRECIO",
-        "PRODUCTO.DESCRIPCION",
-        "PRODUCTO.FOTO",
-        "PRODUCTO.ID_TAG",
-        "PERSONAJE.NOMBRE as personaje",
-        "ANIME.NOMBRE as anime",
-        "CATEGORIA.NOMBRE as categoria"
-    )
-    ->where(function($query) use ($arrayTags) {
-        foreach ($arrayTags as $tag) {
-            $query->orWhere('PRODUCTO.ID_TAG', 'like', '%' . $tag . '%');
+$getTagss = DB::table("PRODUCTO")->select("ID_TAG")->get();
+
+// Decodificar cada ID_TAG dentro de la colección
+$getTags=[];
+foreach ($getTagss as $producto) {
+    $producto->ID_TAG = json_decode($producto->ID_TAG);
+    array_push($getTags,$producto->ID_TAG);
+}
+
+// Filtrar los productos que contengan al menos dos de los tags
+
+$filtrados = array_filter($getTags, function ($tags) use ($arrayTags) {
+    // Verifica si $tags es un array antes de usar la función array_intersect
+    if (is_array($tags)) {
+        // Verifica si la intersección entre $tags y $arrayTags tiene al menos dos elementos
+        return count(array_intersect($tags, $arrayTags)) >=2 || count(array_intersect($tags, $arrayTags)) >=1;
+    } else {
+        // Si $tags no es un array, puedes manejarlo de acuerdo a tus necesidades
+        return false;
+    }
+});
+
+// Obtener los productos que coincidan con los tags filtrados
+$productos = DB::table("PRODUCTO")
+    ->where(function ($query) use ($filtrados) {
+        foreach ($filtrados as $tags) {
+            $query->orWhereJsonContains("ID_TAG", $tags);
         }
     })
-    
+    // Agrega esta línea para obtener resultados aleatorios
+    ->limit(5) // Agrega esta línea para obtener solo 5 resultados
     ->get();
 
 
-    foreach($getProducto as $prod){
+
+
+
+
+    foreach($productos as $prod){
         // $idFavorito=$prod->CODIGO;
         // if (is_string($prod->FOTO)) {
         //     $prod->FOTO = str_replace("https://kimochii.s3.amazonaws.com", '', $prod->FOTO);
@@ -280,8 +319,8 @@ public function getRecomendados(Request $request){
     }
 
     
-    if($getProducto){
-        return response()->json(['success' => true, 'productos'=>$getProducto], 200);
+    if($productos){
+        return response()->json(['success' => true, 'productos'=>$productos], 200);
 
     }else{
         return response()->json(['success' => false, 'message' => 'No se encontraron categorias'], 200);
