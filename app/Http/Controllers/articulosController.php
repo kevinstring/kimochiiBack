@@ -21,15 +21,16 @@ class articulosController extends Controller
         $costo=$request->costo;
         $precio=$request->precio;
         $cantidad=$request->cantidad;
-        $personaje=$request->personaje?:null;
+        $personaje=$request->personaje;
         $tallaS=$request->tallaS?:null;
         $tallaM=$request->tallaM?:null;
         $tallaL=$request->tallaL?:null;
         $esRopa=$request->esRopa;
         $proveedor=$request->proveedor;
+
         // $cantidadRopa=sum([$tallaS,$tallaM,$tallaL]);
 
-
+    
      
         $porcentajeGanancia=0;
 
@@ -47,9 +48,10 @@ class articulosController extends Controller
             'COSTO' => $costo,
             'PRECIO' => $precio,
             'CANTIDAD' => $cantidad,
-            'ID_PERSONAJE' => $personaje || null,
+            'ID_PERSONAJE' => $personaje,
             'PORCENTAJE_GANANCIA' => $porcentajeGanancia,
             'ID_PROVEEDOR' => $proveedor || null,
+            
             // 'FECHA_INGRESO' => $fechaIngreso->toDateTimeString(),
 
         ]);
@@ -277,13 +279,51 @@ $tresLetras1 = "";
 
 public function getCategorias(){
     $getTags=db::table("TAGS")->get();
+    $getAnimes=db::table("ANIME")->get();
+    $getPersonajes=db::table("PERSONAJE")->get();
 
     $getCategoria=db::table("CATEGORIA")->get();
 
 
 
-    return response()->json(["categoria"=>$getCategoria,"tags"=>$getTags]);
+    return response()->json(["categoria"=>$getCategoria,"tags"=>$getTags,"animes"=>$getAnimes,"personajes"=>$getPersonajes]);
     
+}
+public function postAnime(Request $request){
+    $anime= $request->nombre;
+
+    $animes= db::table('ANIME')->SELECT('NOMBRE')->get();
+
+    foreach ($animes as $ani) {
+        if ($ani->NOMBRE === $anime) {
+            return response()->json(["error" => "Este anime ya existe"], 422);
+        }
+    }
+
+    $crearAnime=DB::table('ANIME')->insert(['NOMBRE'=>$anime]);
+
+    if($crearAnime){
+        return response()->json($anime, 200);
+    }
+}
+
+public function postPersonaje(Request $request){
+    $personaje= $request->nombre;
+    $anime=$request->anime;
+
+    $personajes= db::table('PERSONAJE')->SELECT('NOMBRE')->get();
+
+    foreach ($personajes as $per) {
+        if ($per->NOMBRE === $personaje) {
+            return response()->json(["error" => "Este personaje ya existe"], 422);
+        }
+    }
+
+    $crearPersonaje=DB::table('PERSONAJE')->insert(['NOMBRE'=>$personaje,'ID_ANIME'=>$anime]);
+
+    if($crearPersonaje){
+        return response()->json($personaje, 200);
+    }
 }
 
 public function getSubCategorias(Request $request){

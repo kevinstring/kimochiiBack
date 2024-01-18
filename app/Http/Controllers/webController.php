@@ -275,7 +275,8 @@ public function getRecomendados(Request $request){
     $arrayTags = json_decode($request->tags, true);
 
     //obtener solo dos valores de array
-    $arrayTags = array_slice($arrayTags, 0, 1);
+ 
+    // return $arrayTags;
 
      
 
@@ -294,7 +295,7 @@ $filtrados = array_filter($getTags, function ($tags) use ($arrayTags) {
     // Verifica si $tags es un array antes de usar la función array_intersect
     if (is_array($tags)) {
         // Verifica si la intersección entre $tags y $arrayTags tiene al menos dos elementos
-        return count(array_intersect($tags, $arrayTags)) >=2 || count(array_intersect($tags, $arrayTags)) >=1;
+        return count(array_intersect($tags, $arrayTags)) >=5 || count(array_intersect($tags, $arrayTags)) >=1;
     } else {
         // Si $tags no es un array, puedes manejarlo de acuerdo a tus necesidades
         return false;
@@ -310,6 +311,7 @@ $productos = DB::table("PRODUCTO")
     })
     // Agrega esta línea para obtener resultados aleatorios
     ->limit(5) // Agrega esta línea para obtener solo 5 resultados
+    ->inRandomOrder()
     ->get();
 
 
@@ -329,7 +331,7 @@ $productos = DB::table("PRODUCTO")
                     'image' => $url,
                     'thumbImage' => $url, // Puedes ajustar esto según tus necesidades
                     'alt' => 'alt of image',
-                    'title' => 'title of image'
+                
                 ];
             }, $prod->FOTO);
         } else {
