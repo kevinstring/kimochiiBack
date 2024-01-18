@@ -37,18 +37,33 @@ class webController extends Controller
         $pagina = $request->pagina ?? 1; // Página por defecto si no se proporciona
         $limit = 10;
         $offset = ($pagina - 1) * $limit;
+
+
     
         $categoria = ($nombre !== "all") ? DB::table("CATEGORIA")->where('NOMBRE', $nombre)->select("ID")->first() : null;
-    
+        
+
+
+
         if ($nombre !== "all") {
+
+            $cantidadDeProductos=0;
+
             $getProductos = DB::table("PRODUCTO")
                 ->where('ID_CATEGORIA', $categoria->ID)
                 ->leftJoin("PERSONAJE as person", "person.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
-                ->limit($limit)
-                ->offset($offset)
+
                 ->leftJoin("ANIME as an", "an.ID_ANIME", "=", "person.ID_ANIME")
                 ->select("PRODUCTO.ID_PRODUCTO", "PRODUCTO.NOMBRE", "PRODUCTO.PRECIO", "PRODUCTO.DESCRIPCION", "PRODUCTO.FOTO", "person.NOMBRE as personaje", "an.NOMBRE as anime")
+                ->limit($limit)
+                ->offset($offset)
                 ->get();
+
+              $cantidadDeProductos= DB::table("PRODUCTO")
+                ->where('ID_CATEGORIA', $categoria->ID)
+                             ->count();
+
+                             $cantidadDePaginas=ceil($cantidadDeProductos/$limit);
         } else {
             $getProductos = DB::table("PRODUCTO")
                 ->leftJoin("PERSONAJE as person", "person.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
@@ -57,6 +72,11 @@ class webController extends Controller
                 ->offset($offset)
                 ->select("PRODUCTO.ID_PRODUCTO", "PRODUCTO.NOMBRE", "PRODUCTO.PRECIO", "PRODUCTO.DESCRIPCION", "PRODUCTO.FOTO", "person.NOMBRE as personaje", "an.NOMBRE as anime")
                 ->get();
+
+                $cantidadDeProductos= DB::table("PRODUCTO")
+                ->count();
+
+                $cantidadDePaginas=ceil($cantidadDeProductos/$limit);
         }
     
         foreach ($getProductos as $prod) {
@@ -74,9 +94,10 @@ class webController extends Controller
                 $prod->FOTO = [];
             }
         }
+
     
         if ($getProductos->count() > 0) {
-            return response()->json(['success' => true, 'productos' => $getProductos], 200);
+            return response()->json(['success' => true, 'productos' => $getProductos,'cantidadPaginas'=>$cantidadDePaginas], 200);
         } else {
             return response()->json(['success' => false, 'message' => 'No se encontraron categorías'], 200);
         }
