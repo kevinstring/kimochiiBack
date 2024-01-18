@@ -178,7 +178,7 @@ class webController extends Controller
 
     public function getMasVendidos(){
         $ventas = DB::table("VENTA")->select("CODIGO_PRODUCTO", DB::raw("COUNT(CODIGO_PRODUCTO) as cantidad",))
-            ->groupBy("CODIGO_PRODUCTO")->orderBy("cantidad", "DESC")->limit(5)->get();
+            ->groupBy("CODIGO_PRODUCTO")->orderBy("cantidad", "DESC")->limit(8)->get();
     
         $productos = [];
     
