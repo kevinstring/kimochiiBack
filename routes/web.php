@@ -58,3 +58,4 @@ Route::post('getDetalleProducto','App\Http\Controllers\webController@getDetalleP
 Route::post('getRecomendados','App\Http\Controllers\webController@getRecomendados');
 Route::post('postAnime','App\Http\Controllers\articulosController@postAnime');
 Route::post('postPersonaje','App\Http\Controllers\articulosController@postPersonaje');
+Route::post('buscarPorUnAnime','App\Http\Controllers\webController@buscarPorUnAnime');

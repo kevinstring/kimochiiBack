@@ -20,15 +20,73 @@ class webController extends Controller
 }
 
     public function getCategoriasW(){
+
+
+        $getAnime = DB::table("ANIME")->select("NOMBRE")->get();
+
+        foreach($getAnime as $anime){
+            $anime->NOMBRE=ucwords(strtolower($anime->NOMBRE));
+        }
+
         $categorias=DB::table("CATEGORIA")->where('OCULTO',0)->get();
 
         if($categorias){
-            return response()->json(['success' => true, 'categorias'=>$categorias], 200);
+            return response()->json(['success' => true, 'categorias'=>$categorias,'anime'=>$getAnime], 200);
 
         }else{
             return response()->json(['success' => false, 'message' => 'No se encontraron categorias'], 200);
 
         }
+
+    }
+
+    public function buscarPorUnAnime(Request $request){
+        $anime=$request->anime;
+        $pagina = $request->pagina ?? 1; // Página por defecto si no se proporciona
+        $limit = 10;
+        $offset = ($pagina - 1) * $limit;
+
+        $getProductos = DB::table("PRODUCTO")
+        ->leftJoin("PERSONAJE as person", "person.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
+        ->leftJoin("ANIME as an", "an.ID_ANIME", "=", "person.ID_ANIME")
+        ->where('an.NOMBRE',$anime)
+        ->select("PRODUCTO.ID_PRODUCTO", "PRODUCTO.NOMBRE", "PRODUCTO.PRECIO", "PRODUCTO.DESCRIPCION", "PRODUCTO.FOTO", "person.NOMBRE as personaje", "an.NOMBRE as anime")
+        ->limit($limit)
+        ->offset($offset)
+        ->get();
+
+        foreach ($getProductos as $prod) {
+            $prod->FOTO = json_decode($prod->FOTO);
+            if (is_array($prod->FOTO)) {
+                $prod->FOTO = array_map(function ($url) {
+                    return [
+                        'image' => $url,
+                        'thumbImage' => $url, // Puedes ajustar esto según tus necesidades
+                        'alt' => 'alt of image',
+                        'title' => 'title of image'
+                    ];
+                }, $prod->FOTO);
+            } else {
+                $prod->FOTO = [];
+            }
+        }
+
+        $cantidadDeProductos= DB::table("PRODUCTO")
+        ->leftJoin("PERSONAJE as person", "person.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
+        ->leftJoin("ANIME as an", "an.ID_ANIME", "=", "person.ID_ANIME")
+        ->where('an.NOMBRE',$anime)
+        ->count();
+
+        $cantidadDePaginas=ceil($cantidadDeProductos/$limit);
+
+        if($getProductos){
+            return response()->json(['success' => true, 'productos'=>$getProductos,'cantidadPaginas'=>$cantidadDePaginas], 200);
+
+        }else{
+            return response()->json(['success' => false, 'message' => 'No se encontraron categorias'], 200);
+
+        }
+
 
     }
 
@@ -112,7 +170,7 @@ class webController extends Controller
     
         $getProductos = DB::table("PRODUCTO")
             ->where(function($query) use ($nombre) {
-                $query->where('PRODUCTO.NOMBRE', 'like', '%' . $nombre . '%')
+                $query->orWhere('PRODUCTO.NOMBRE', 'like', '%' . $nombre . '%')
                       ->orWhere('PRODUCTO.DESCRIPCION', 'like', '%' . $nombre . '%')
                       ->orWhere('ANIME.NOMBRE', 'like', '%' . $nombre . '%')
                       ->orWhere('CATEGORIA.NOMBRE', 'like', '%' . $nombre . '%')
@@ -150,26 +208,37 @@ class webController extends Controller
                 $prod->FOTO = [];
             }
         }
+
+            
     
-        // $productosCount = DB::table("PRODUCTO")
-        //     ->where(function($query) use ($nombre) {
-        //         $query->where('PRODUCTO.NOMBRE', 'like', '%' . $nombre . '%')
-        //               ->orWhere('PRODUCTO.DESCRIPCION', 'like', '%' . $nombre . '%')
-        //               ->orWhere('ANIME.NOMBRE', 'like', '%' . $nombre . '%')
-        //               ->orWhere('CATEGORIA.NOMBRE', 'like', '%' . $nombre . '%')
-        //               ->orWhere('PERSONAJE.NOMBRE', 'like', '%' . $nombre . '%');
-        //     })
-        //     ->count();
+      $productosCount=  DB::table("PRODUCTO")
+      ->where(function($query) use ($nombre) {
+          $query->orWhere('PRODUCTO.NOMBRE', 'like', '%' . $nombre . '%')
+                ->orWhere('PRODUCTO.DESCRIPCION', 'like', '%' . $nombre . '%')
+                ->orWhere('ANIME.NOMBRE', 'like', '%' . $nombre . '%')
+                ->orWhere('CATEGORIA.NOMBRE', 'like', '%' . $nombre . '%')
+                ->orWhere('PERSONAJE.NOMBRE', 'like', '%' . $nombre . '%');
+      })
+      ->leftJoin("PERSONAJE", "PERSONAJE.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
+      ->leftJoin("ANIME", "ANIME.ID_ANIME", "=", "PERSONAJE.ID_ANIME")
+      ->leftJoin("CATEGORIA", "CATEGORIA.ID", "=", "PRODUCTO.ID_CATEGORIA")
+      ->select(
+          "PRODUCTO.ID_PRODUCTO",
+          "PRODUCTO.NOMBRE",
+          "PRODUCTO.PRECIO",
+          "PRODUCTO.DESCRIPCION",
+          "PRODUCTO.FOTO",
+          "PERSONAJE.NOMBRE as personaje",
+          "ANIME.NOMBRE as anime",
+          "CATEGORIA.NOMBRE as categoria"
+      )
+
+
+            ->count();
     
-        // $pagination = [
-        //     'currentPage' => $pagina,
-        //     'perPage' => $limit,
-        //     'totalItems' => $productosCount,
-        //     'totalPages' => ceil($productosCount / $limit),
-        // ];
-    
+     $cantidadDePaginas=ceil($productosCount/$limit);
         if ($getProductos->count() > 0) {
-            return response()->json(['success' => true, 'productos' => $getProductos], 200);
+            return response()->json(['success' => true, 'productos' => $getProductos,'cantidadPaginas'=>$cantidadDePaginas], 200);
         } else {
             return response()->json(['success' => false, 'message' => 'No se encontraron productos'], 200);
         }

@@ -14,7 +14,41 @@ class VentasController extends Controller
         $id_categoria=$request->idcategoria;
 
 
+        if($id_categoria==22){
+            $productos= DB::TABLE("PRODUCTO")->leftjoin("ROPA","ROPA.CODIGO", "=","PRODUCTO.CODIGO")->select("ROPA.T_S as TALLA_S","ROPA.T_M as TALLA_M","ROPA.T_L as TALLA_L","ROPA.T_XL as TALLA_XL","ROPA.T_10 as TALLA_10","ROPA.T_12 as TALLA_12","ROPA.T_14 as TALLA_14","PRODUCTO.CANTIDAD","PRODUCTO.CODIGO","PRODUCTO.FOTO")->where('PRODUCTO.ID_CATEGORIA',$id_categoria)->get();
+        
+            foreach ($productos as $producto) {
+                $cantidadTallaS = $producto->TALLA_S;
+                $cantidadTallaM = $producto->TALLA_M;
+                $cantidadTallaL = $producto->TALLA_L;
+                    $cantidadTallaXL = $producto->TALLA_XL;
+                    $cantidadTalla10 = $producto->TALLA_10;
+                    $cantidadTalla12 = $producto->TALLA_12;
+                    $cantidadTalla14 = $producto->TALLA_14;
+            
+                $cantidadRopa = array_sum([$cantidadTallaS, $cantidadTallaM, $cantidadTallaL,$cantidadTallaXL,$cantidadTalla10,$cantidadTalla12,$cantidadTalla14]);
+            
+                // Agregar la cantidad total al objeto producto
+                $producto->CANTIDAD = $cantidadRopa;
+            
+                // Agregar las cantidades por talla al array TALLAS dentro del objeto producto
+                $producto->TALLAS = [
+                    "S" => $cantidadTallaS ,
+                    "M" => $cantidadTallaM,
+                    "L" => $cantidadTallaL,
+                    "XL" => $cantidadTallaXL,
+                    "10" => $cantidadTalla10,
+                    "12" => $cantidadTalla12,
+                    "14" => $cantidadTalla14,
+
+                ];
+        
+            }
+     }else{
+
         $productos= DB::TABLE("PRODUCTO")->where('ID_CATEGORIA',$id_categoria)->get();
+
+    }
     
         if($productos){
             return response()->json(['success' => true, 'productos' => $productos], 200);
@@ -218,6 +252,10 @@ class VentasController extends Controller
             ->where('CODIGO_PRODUCTO', $codigoProducto)
             ->leftJoin('PRODUCTO as product', 'product.CODIGO', '=', 'VENTA.CODIGO_PRODUCTO')
             ->first();
+
+            $ropas = DB::table("ROPA")
+            ->where('CODIGO', $codigoProducto)
+            ->first();
     
         if ($productoRepetido) {
             // Actualizar la cantidad en la venta existente
@@ -232,13 +270,41 @@ class VentasController extends Controller
             $productos = DB::table("PRODUCTO")
                 ->where('CODIGO', $codigoProducto)
                 ->first();
-
-                if($talla=="M" || $talla==="L" || $talla==="S"){
-                    $ropas=DB::table("ROPA")
-                    ->where('CODIGO',$codigoProducto)
-                    ->where('TALLA',$talla)
-                    ->first();
+                if ($talla == "M" || $talla === "L" || $talla === "S" || $talla === "XL" || $talla === "10" || $talla === "12" || $talla === "14") {
+   
+        
+                    $nombreCampo = 'T_' . $talla;
+        
+                    // Obtener la cantidad actual de ropa para la talla específica
+                    $cantidadActual = $ropas->{$nombreCampo};
+        
+                    // Verificar si hay suficiente cantidad de ropa
+                    if ($cantidadActual > 0) {
+                        // Calcular la nueva cantidad de ropa
+                        $nuevaCantidadRopa = $cantidadActual - 1;
+        
+                        // Actualizar la cantidad de ropa en la tabla
+                        $actualizarPrenda = DB::table("ROPA")
+                            ->where('CODIGO', $codigoProducto)
+                            ->update([
+                                $nombreCampo => $nuevaCantidadRopa,
+                            ]);
+                    } else {
+                        // Manejar el caso donde no hay suficiente cantidad de ropa en esa talla
+                        return response()->json(['success' => false, 'message' => 'No hay suficiente cantidad de ropa en la talla especificada'], 200);
+                    }
                 }
+
+                // if($ropas){
+                //     $cantidad=$ropas->$talla;
+                // }else{
+                //     $cantidad=0;
+                // }
+
+                // $actualizarRopa=DB::table("ROPA")
+                // ->where('CODIGO',$codigoProducto)
+                // ->where($talla,)
+
     
             // Calcular el nuevo total de la venta
             $totalVenta = $productos->PRECIO * $cantidad;
@@ -256,6 +322,8 @@ class VentasController extends Controller
             if ($productos->CANTIDAD <= 0) {
                 return response()->json(['success' => false, 'message' => 'No hay suficientes productos en stock'], 200);
             } else {
+
+
                 // Actualizar la cantidad de productos en stock
                 $nuevaCantidad = $productos->CANTIDAD - 1;
                 $productoActualizado = DB::table("PRODUCTO")
@@ -264,15 +332,32 @@ class VentasController extends Controller
                         'CANTIDAD' => $nuevaCantidad,
                     ]);
     
-                // Actualizar la cantidad de ropa en stock
-                if($talla=="M" || $talla==="L" || $talla==="S"){
-                    $ropaActualizada = DB::table("ROPA")
-                    ->where('CODIGO_PRODUCTO', $codigoProducto)
-                    ->where('TALLA', $talla)
-                    ->update([
-                        'CANTIDAD' => $nuevaCantidad,
-                    ]);
-                }
+                    // if ($talla == "M" || $talla === "L" || $talla === "S" || $talla === "XL" || $talla === "10" || $talla === "12" || $talla === "14") {
+                    //     $ropas = DB::table("ROPA")
+                    //         ->where('CODIGO', $codigoProducto)
+                    //         ->first();
+            
+                    //     $nombreCampo = 'T_' . $talla;
+            
+                    //     // Obtener la cantidad actual de ropa para la talla específica
+                    //     $cantidadActual = $ropas->{$nombreCampo};
+            
+                    //     // Verificar si hay suficiente cantidad de ropa
+                    //     if ($cantidadActual > 0) {
+                    //         // Calcular la nueva cantidad de ropa
+                    //         $nuevaCantidadRopa = $cantidadActual - 1;
+            
+                    //         // Actualizar la cantidad de ropa en la tabla
+                    //         $actualizarPrenda = DB::table("ROPA")
+                    //             ->where('CODIGO', $codigoProducto)
+                    //             ->update([
+                    //                 $nombreCampo => $nuevaCantidadRopa,
+                    //             ]);
+                    //     } else {
+                    //         // Manejar el caso donde no hay suficiente cantidad de ropa en esa talla
+                    //         return response()->json(['success' => false, 'message' => 'No hay suficiente cantidad de ropa en la talla especificada'], 200);
+                    //     }
+                    // }
 
             }
     
@@ -289,10 +374,14 @@ class VentasController extends Controller
                 'CODIGO_PRODUCTO' => $codigoProducto,
                 'CANTIDAD' => $cantidad,
             ]);
+
+
     
             $productos = DB::table("PRODUCTO")
             ->where('CODIGO', $codigoProducto)
             ->first();
+
+
         
         if ($productos) {
             // El producto fue encontrado, puedes acceder a sus propiedades
@@ -324,14 +413,34 @@ class VentasController extends Controller
                     ->update([
                         'CANTIDAD' => $nuevaCantidad,
                     ]);
-    
-                // Actualizar la cantidad de ropa en stock
-                $ropaActualizada = DB::table("ROPA")
-                    ->where('CODIGO_PRODUCTO', $codigoProducto)
-                    ->where('TALLA', $talla)
-                    ->update([
-                        'CANTIDAD' => $nuevaCantidad,
-                    ]);
+
+                    if ($talla == "M" || $talla === "L" || $talla === "S" || $talla === "XL" || $talla === "10" || $talla === "12" || $talla === "14") {
+                        $ropas = DB::table("ROPA")
+                            ->where('CODIGO', $codigoProducto)
+                            ->first();
+            
+                        $nombreCampo = 'T_' . $talla;
+            
+                        // Obtener la cantidad actual de ropa para la talla específica
+                        $cantidadActual = $ropas->{$nombreCampo};
+            
+                        // Verificar si hay suficiente cantidad de ropa
+                        if ($cantidadActual > 0) {
+                            // Calcular la nueva cantidad de ropa
+                            $nuevaCantidadRopa = $cantidadActual - 1;
+            
+                            // Actualizar la cantidad de ropa en la tabla
+                            $actualizarPrenda = DB::table("ROPA")
+                                ->where('CODIGO', $codigoProducto)
+                                ->update([
+                                    $nombreCampo => $nuevaCantidadRopa,
+                                ]);
+                        } else {
+                            // Manejar el caso donde no hay suficiente cantidad de ropa en esa talla
+                            return response()->json(['success' => false, 'message' => 'No hay suficiente cantidad de ropa en la talla especificada'], 200);
+                        }
+                    }
+
             }
     
             // Verificar si la comanda se agregó correctamente

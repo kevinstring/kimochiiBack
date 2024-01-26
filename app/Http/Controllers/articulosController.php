@@ -22,9 +22,14 @@ class articulosController extends Controller
         $precio=$request->precio;
         $cantidad=$request->cantidad;
         $personaje=$request->personaje;
-        $tallaS=$request->tallaS?:null;
-        $tallaM=$request->tallaM?:null;
-        $tallaL=$request->tallaL?:null;
+        $tallaS=$request->tallaS;
+        $tallaM=$request->tallaM;
+        $tallaL=$request->tallaL;
+         $tallaXL=$request->tallaXL;
+         $talla10=$request->talla10;
+            $talla12=$request->talla12;
+            $talla14=$request->talla14;
+
         $esRopa=$request->esRopa;
         $proveedor=$request->proveedor;
 
@@ -50,7 +55,7 @@ class articulosController extends Controller
             'CANTIDAD' => $cantidad,
             'ID_PERSONAJE' => $personaje,
             'PORCENTAJE_GANANCIA' => $porcentajeGanancia,
-            'ID_PROVEEDOR' => $proveedor || null,
+            'ID_PROVEEDOR' => $proveedor ,
             
             // 'FECHA_INGRESO' => $fechaIngreso->toDateTimeString(),
 
@@ -97,19 +102,24 @@ $tresLetras1 = "";
             'NOMBRE' => $nombre,
             'FOTO' => $foto,
             'DESCRIPCION' => $descripcion,
-            'ID_SUBCATEGORIA' => $subcategoriaid || null,
+            'ID_SUBCATEGORIA' => $categoria,
             'COSTO' => $costo,
             'PRECIO' => $precio,
-            'ID_PERSONAJE' => $personaje || null,
-            'S' => $tallaS,
-            'M' => $tallaM,
-            'L' => $tallaL,
+            'ID_PERSONAJE' => $personaje,
+            'T_S' => $tallaS,
+            'T_M' => $tallaM,
+            'T_L' => $tallaL,
+            'T_XL' => $tallaXL,
+            'T_10' => $talla10,
+            'T_12' => $talla12,
+            'T_14' => $talla14,
+
 
         ]);
 
         $productoInsertado = DB::table("ROPA")->where('ROPA.ID', $prendaInsertada)
-        ->leftjoin("CATEGORIA as subcat","subcat.ID","=","ROPA.ID_CATEGORIA")
-        ->select("ROPA.ID","subcat.NOMBRE as NOMBRE_SUBCAT","ROPA.NOMBRE as NOMBRE_PRODUCTO","ROPA.FOTO","ROPA.DESCRIPCION","ROPA.COSTO","ROPA.PRECIO","ROPA.S","ROPA.M","ROPA.L")
+        ->leftjoin("CATEGORIA as subcat","subcat.ID","=","ROPA.ID_SUBCATEGORIA")
+        ->select("ROPA.ID","subcat.NOMBRE as NOMBRE_SUBCAT","ROPA.NOMBRE as NOMBRE_PRODUCTO","ROPA.FOTO","ROPA.DESCRIPCION","ROPA.COSTO","ROPA.PRECIO","ROPA.T_S","ROPA.T_M","ROPA.T_L")
         ->first();
 
         $nombreProducto=$productoInsertado->NOMBRE_PRODUCTO;
@@ -117,17 +127,6 @@ $tresLetras1 = "";
 
         $nombreProducto=substr($nombreProducto,0,3);
         $subcategoriaid=substr($subcategoriaid,0,3);
-        $codigoUnico= "";
-
-        if($personaje!==null && $personaje!=="" && $personaje!=="null"){
-            $personaje=substr($personaje,0,3);
-            $codigoUnico=$nombreProducto.'-'.$subcategoriaid.'-'.$personaje.'-'.$prendaInsertada;
-            $codigoUnico=strtoupper($codigoUnico);
-        }else{
-            $codigoUnico=$nombreProducto.'-'.$subcategoriaid.'-'.$prendaInsertada;
-            $codigoUnico=strtoupper($codigoUnico);
-
-        }
 
 
         $insertarCodigo=db::table("ROPA")->where('ID',$prendaInsertada)->update(['CODIGO'=>$codigoUnico]);
@@ -363,13 +362,18 @@ public function postFavorito(Request $request){
 public function getRopa(){
     $ropa = DB::table('ROPA')
     ->leftjoin("CATEGORIA as subcat", "subcat.ID", "=", "ROPA.ID_SUBCATEGORIA")
-    ->select("ROPA.ID as ID_PRODUCTO", "ROPA.CODIGO as CODIGO", "subcat.NOMBRE as NOMBRE_SUBCAT", "ROPA.NOMBRE as NOMBRE_PRODUCTO", "ROPA.FOTO", "ROPA.DESCRIPCION", "ROPA.COSTO", "ROPA.PRECIO", "ROPA.S as TALLA_S", "ROPA.M as TALLA_M", "ROPA.L as TALLA_L")
+    ->select("ROPA.ID as ID_PRODUCTO", "ROPA.CODIGO as CODIGO", "subcat.NOMBRE as NOMBRE_SUBCAT", "ROPA.NOMBRE as NOMBRE_PRODUCTO", "ROPA.FOTO", "ROPA.DESCRIPCION", "ROPA.COSTO", "ROPA.PRECIO", "ROPA.S as TALLA_S", "ROPA.M as TALLA_M", "ROPA.L as TALLA_L", "ROPA.XL as TALLA_XL", "ROPA.10 as TALLA_10", "ROPA.12 as TALLA_12", "ROPA.14 as TALLA_14")
     ->get();
+
 
     foreach ($ropa as $producto) {
         $cantidadTallaS = $producto->TALLA_S;
         $cantidadTallaM = $producto->TALLA_M;
         $cantidadTallaL = $producto->TALLA_L;
+            $cantidadTallaXL = $producto->TALLA_XL;
+            $cantidadTalla10 = $producto->TALLA_10;
+            $cantidadTalla12 = $producto->TALLA_12;
+            $cantidadTalla14 = $producto->TALLA_14;
     
         $cantidadRopa = array_sum([$cantidadTallaS, $cantidadTallaM, $cantidadTallaL]);
     
@@ -382,7 +386,11 @@ public function getRopa(){
             "M" => $cantidadTallaM,
             "L" => $cantidadTallaL
         ];
+
+        $producto->FOTO = json_decode($producto->FOTO);
     }
+
+
 
     return response()->json(["ropa"=>$ropa]);
 
