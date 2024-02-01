@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 class webController extends Controller
 {
     public function getProveedoresInter(){
-        $proveedoresInternaciona= DB::TABLE("PROVEEDORES_INTERNACIONAL")->get();
+        $proveedoresInternaciona= DB::TABLE("PROVEEDORES")->get();
    
 
         if($proveedoresInternaciona){
@@ -50,7 +50,9 @@ class webController extends Controller
         ->leftJoin("PERSONAJE as person", "person.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
         ->leftJoin("ANIME as an", "an.ID_ANIME", "=", "person.ID_ANIME")
         ->where('an.NOMBRE',$anime)
-        ->select("PRODUCTO.ID_PRODUCTO", "PRODUCTO.NOMBRE", "PRODUCTO.PRECIO", "PRODUCTO.DESCRIPCION", "PRODUCTO.FOTO", "person.NOMBRE as personaje", "an.NOMBRE as anime")
+        ->where('PRODUCTO.OCULTO',0 )
+        
+        ->select("PRODUCTO.ID_PRODUCTO", "PRODUCTO.NOMBRE", "PRODUCTO.PRECIO", "PRODUCTO.DESCRIPCION", "PRODUCTO.FOTO", "person.NOMBRE as personaje", "an.NOMBRE as anime","PRODUCTO.CANTIDAD as CANTIDAD")
         ->limit($limit)
         ->offset($offset)
         ->get();
@@ -66,6 +68,12 @@ class webController extends Controller
                         'title' => 'title of image'
                     ];
                 }, $prod->FOTO);
+
+                if($prod->CANTIDAD==0){
+                    $prod->STOCK="AGOTADO";
+            }else{
+                $prod->STOCK="EN STOCK";
+            }
             } else {
                 $prod->FOTO = [];
             }
@@ -112,7 +120,8 @@ class webController extends Controller
                 ->leftJoin("PERSONAJE as person", "person.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
 
                 ->leftJoin("ANIME as an", "an.ID_ANIME", "=", "person.ID_ANIME")
-                ->select("PRODUCTO.ID_PRODUCTO", "PRODUCTO.NOMBRE", "PRODUCTO.PRECIO", "PRODUCTO.DESCRIPCION", "PRODUCTO.FOTO", "person.NOMBRE as personaje", "an.NOMBRE as anime")
+                ->select("PRODUCTO.ID_PRODUCTO", "PRODUCTO.NOMBRE", "PRODUCTO.PRECIO", "PRODUCTO.DESCRIPCION", "PRODUCTO.FOTO", "person.NOMBRE as personaje", "an.NOMBRE as anime","PRODUCTO.CANTIDAD as CANTIDAD","PRODUCTO.CODIGO as CODIGO")
+                ->where('PRODUCTO.OCULTO',0 )
                 ->limit($limit)
                 ->offset($offset)
                 ->get();
@@ -126,9 +135,12 @@ class webController extends Controller
             $getProductos = DB::table("PRODUCTO")
                 ->leftJoin("PERSONAJE as person", "person.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
                 ->leftJoin("ANIME as an", "an.ID_ANIME", "=", "person.ID_ANIME")
+                ->where('PRODUCTO.OCULTO',0 )
                 ->limit($limit)
                 ->offset($offset)
-                ->select("PRODUCTO.ID_PRODUCTO", "PRODUCTO.NOMBRE", "PRODUCTO.PRECIO", "PRODUCTO.DESCRIPCION", "PRODUCTO.FOTO", "person.NOMBRE as personaje", "an.NOMBRE as anime")
+                ->select("PRODUCTO.ID_PRODUCTO", "PRODUCTO.NOMBRE", "PRODUCTO.PRECIO", "PRODUCTO.DESCRIPCION", "PRODUCTO.FOTO", "person.NOMBRE as personaje", "an.NOMBRE as anime","PRODUCTO.CANTIDAD as CANTIDAD")
+        
+                
                 ->get();
 
                 $cantidadDeProductos= DB::table("PRODUCTO")
@@ -142,7 +154,7 @@ class webController extends Controller
             if (is_array($prod->FOTO)) {
                 $prod->FOTO = array_map(function ($url) {
                     return [
-                        'image' => $url,
+                        'path' => $url,
                         'thumbImage' => $url, // Puedes ajustar esto según tus necesidades
                         'alt' => 'alt of image',
                         'title' => 'title of image'
@@ -151,6 +163,16 @@ class webController extends Controller
             } else {
                 $prod->FOTO = [];
             }
+
+            if($prod->CANTIDAD==0){
+                    $prod->STOCK="AGOTADO";
+            }else{
+                $prod->STOCK="EN STOCK";
+
+            }
+
+
+ 
         }
 
     
@@ -176,6 +198,7 @@ class webController extends Controller
                       ->orWhere('CATEGORIA.NOMBRE', 'like', '%' . $nombre . '%')
                       ->orWhere('PERSONAJE.NOMBRE', 'like', '%' . $nombre . '%');
             })
+            ->where('PRODUCTO.OCULTO',0)
             ->leftJoin("PERSONAJE", "PERSONAJE.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
             ->leftJoin("ANIME", "ANIME.ID_ANIME", "=", "PERSONAJE.ID_ANIME")
             ->leftJoin("CATEGORIA", "CATEGORIA.ID", "=", "PRODUCTO.ID_CATEGORIA")
@@ -187,7 +210,9 @@ class webController extends Controller
                 "PRODUCTO.FOTO",
                 "PERSONAJE.NOMBRE as personaje",
                 "ANIME.NOMBRE as anime",
-                "CATEGORIA.NOMBRE as categoria"
+                "CATEGORIA.NOMBRE as categoria",
+                "PRODUCTO.CANTIDAD as CANTIDAD",
+                "PRODUCTO.CODIGO as CODIGO"
             )
             ->offset($offset)
             ->limit($limit)
@@ -207,6 +232,12 @@ class webController extends Controller
             } else {
                 $prod->FOTO = [];
             }
+
+            if($prod->CANTIDAD==0){
+                $prod->STOCK="AGOTADO";
+        }else{
+            $prod->STOCK="EN STOCK";
+        }
         }
 
             
@@ -253,7 +284,7 @@ class webController extends Controller
     
         foreach($ventas as $venta){
             // Intenta obtener el producto correspondiente
-            $producto = DB::table("PRODUCTO")->where("CODIGO", $venta->CODIGO_PRODUCTO)->first();
+            $producto = DB::table("PRODUCTO")->where("CODIGO", $venta->CODIGO_PRODUCTO)->where("OCULTO",0)->first();
            
           
             // Verifica si $producto es nulo antes de acceder a sus propiedades
@@ -315,7 +346,10 @@ public function tuOtraFuncion() {
 
 public function getDetalleProducto(Request $request){
     $id=$request->id;
-    $producto=DB::table("PRODUCTO")->where('NOMBRE',$id)->select("PRODUCTO.NOMBRE", "PRODUCTO.DESCRIPCION","PRODUCTO.PRECIO","PRODUCTO.FOTO","PRODUCTO.ID_TAG")->first();
+    $producto=DB::table("PRODUCTO")
+    ->leftjoin("COLABORADORES as col","col.ID","=","PRODUCTO.ID_COLABORADOR")
+    ->where('PRODUCTO.NOMBRE',$id)->select("PRODUCTO.NOMBRE", "PRODUCTO.DESCRIPCION","PRODUCTO.PRECIO","PRODUCTO.FOTO","PRODUCTO.ID_TAG","PRODUCTO.CANTIDAD as CANTIDAD","PRODUCTO.ID_CATEGORIA as CATEGORIA","PRODUCTO.CODIGO as CODIGO","col.LINK","col.NOMBRE as NOMBRE_COLA")->first();
+   
     $producto->FOTO = json_decode($producto->FOTO);
     if (is_array($producto->FOTO)) {
         $producto->FOTO = array_map(function ($url) {
@@ -326,10 +360,68 @@ public function getDetalleProducto(Request $request){
                 'title' => 'title of image'
             ];
         }, $producto->FOTO);
+
+        if($producto->CANTIDAD==0){
+            $producto->STOCK="AGOTADO";
+    }else{
+        $producto->STOCK="EN STOCK";
+    }
+
+
+
     } else {
         // Si FOTO no es un array, puedes manejarlo de acuerdo a tus necesidades
         $producto->FOTO = [];
+
     }
+
+      if($producto->CATEGORIA==22){
+        $prenda= DB::table("ROPA")->where('CODIGO',$producto->CODIGO)->select("ROPA.T_S as TALLA_S","ROPA.T_M as TALLA_M","ROPA.T_L as TALLA_L","ROPA.T_XL as TALLA_XL","ROPA.T_10 as TALLA_10","ROPA.T_12 as TALLA_12","ROPA.T_14 as TALLA_14")->get();
+
+        foreach($prenda as $prend){
+            $cantidadTallaS = $prend->TALLA_S ?? 0;
+            $cantidadTallaM = $prend->TALLA_M ?? 0;
+            $cantidadTallaL = $prend->TALLA_L   ?? 0;
+                $cantidadTallaXL = $prend->TALLA_XL ?? 0;
+                $cantidadTalla10 = $prend->TALLA_10 ?? 0;
+                $cantidadTalla12 = $prend->TALLA_12 ?? 0;
+                $cantidadTalla14 = $prend->TALLA_14 ?? 0;
+        }
+
+        $producto->TALLAS = [
+            "S" => $cantidadTallaS,
+            "M" => $cantidadTallaM,
+            "L" => $cantidadTallaL,
+            "XL" => $cantidadTallaXL,
+            "10" => $cantidadTalla10,
+            "12" => $cantidadTalla12,
+            "14" => $cantidadTalla14,
+
+        ];
+
+        foreach($producto->TALLAS as $key=>$talla){
+            if($talla==0){
+                unset($producto->TALLAS[$key]);
+
+                   
+        
+
+
+            }
+
+        }
+        $tallasArray = [];
+        foreach ($producto->TALLAS as $talla => $cantidad) {
+            $tallasArray[] = ['talla' => $talla, 'cantidad' => $cantidad];
+        }
+    
+        // Asignar el array de objetos al objeto $producto
+        $producto->TALLAS = $tallasArray;
+
+    
+    }
+
+  
     if($producto){
         return response()->json(['success' => true, 'producto'=>$producto], 200);
 
@@ -413,6 +505,37 @@ $productos = DB::table("PRODUCTO")
     
     if($productos){
         return response()->json(['success' => true, 'productos'=>$productos], 200);
+
+    }else{
+        return response()->json(['success' => false, 'message' => 'No se encontraron categorias'], 200);
+
+    }
+
+
+}
+
+public function pasarelaRopa(){
+    $getRopa=DB::table("PRODUCTO")->where("PRODUCTO.ID_CATEGORIA",22)->inRandomOrder()->take(5)->get();
+
+    foreach($getRopa as $ropa){
+        $ropa->FOTO = json_decode($ropa->FOTO);
+        if (is_array($ropa->FOTO)) {
+            $ropa->FOTO = array_map(function ($url) {
+                return [
+                    'image' => $url,
+                    'thumbImage' => $url, // Puedes ajustar esto según tus necesidades
+                    'alt' => 'alt of image',
+                    'title' => 'title of image'
+                ];
+            }, $ropa->FOTO);
+        } else {
+            // Si FOTO no es un array, puedes manejarlo de acuerdo a tus necesidades
+            $ropa->FOTO = [];
+        }
+    }
+
+    if($getRopa){
+        return response()->json(['success' => true, 'ropa'=>$getRopa], 200);
 
     }else{
         return response()->json(['success' => false, 'message' => 'No se encontraron categorias'], 200);

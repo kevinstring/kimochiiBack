@@ -152,5 +152,65 @@ public function postCompras(Request $request){
 
 }
 
+ 
+public function idTiendaDevolucion(Request $request){
+
+    $idTienda=$request->id;
+
+    $compras= DB::TABLE("COMPRAS")->where('ES_INTERNACIONAL',1)->where('ID_PROVEEDORES_INTERNACIONAL',$idTienda)->get();
+
+    if($compras){
+        return response()->json(['success' => true, 'compras' => $compras,'message'=>"Compra agregada"], 200);
+    }else{
+        return response()->json(['success' => false, 'message' => 'No se encontraron compras'], 200);
+    }
+
+
+}
+
+public function ingresarDevolucion(Request $request){
+    $id_proveedor=$request->id_proveedor;
+    $id_compra=$request->id_compra;
+    $descripcion=$request->descripcion;
+ 
+    $monto=$request->monto;
+
+    $fecha= date("Y-m-d");
+
+    $devolucion= DB::TABLE("DEVOLUCIONES")->insert([
+        'ID_TIENDA'=>$id_proveedor,
+        'ID_COMPRA'=>$id_compra,
+        'DESCRIPCION'=>$descripcion,
+        'FECHA'=>$fecha,
+        'MONTO'=>$monto,
+    ]);
+
+    if($devolucion){
+    
+
+        $compras= DB::TABLE("COMPRAS")->where('ID_COMPRA',$id_compra)->get();
+
+        $montoCompra=$compras[0]->MONTO;
+
+        $montoCompra=$montoCompra-$monto;
+
+        $compras= DB::TABLE("COMPRAS")->where('ID_COMPRA',$id_compra)->update([
+            'MONTO'=>$montoCompra,
+        ]);
+
+        if($compras){
+            return response()->json(['success' => true, 'compras' => $compras,'message'=>"Devolucion agregada"], 200);
+        }else{
+            return response()->json(['success' => false, 'message' => 'No se encontraron compras'], 200);
+        }
+            
+
+
+    }else{
+        return response()->json(['success' => false, 'message' => 'No se encontraron devoluciones'], 200);
+    }
+
+}
+
 
 }

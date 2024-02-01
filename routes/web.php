@@ -59,3 +59,13 @@ Route::post('getRecomendados','App\Http\Controllers\webController@getRecomendado
 Route::post('postAnime','App\Http\Controllers\articulosController@postAnime');
 Route::post('postPersonaje','App\Http\Controllers\articulosController@postPersonaje');
 Route::post('buscarPorUnAnime','App\Http\Controllers\webController@buscarPorUnAnime');
+Route::get('pasarelaRopa','App\Http\Controllers\webController@pasarelaRopa');
+Route::post('login','App\Http\Controllers\usuarioController@login');
+Route::post('idTiendaDevolucion','App\Http\Controllers\proveedoresController@idTiendaDevolucion');
+
+Route::post('ingresarDevolucion','App\Http\Controllers\proveedoresController@ingresarDevolucion');
+
+Route::get('getVentaFiada','App\Http\Controllers\VentasController@getVentaFiada');
+
+Route::post('cobrarVentaFiada','App\Http\Controllers\VentasController@cobrarVentaFiada');
+

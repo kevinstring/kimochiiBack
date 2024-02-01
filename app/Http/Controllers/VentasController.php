@@ -98,34 +98,35 @@ class VentasController extends Controller
         
         if ($indice === 2) {
             $granTotal = 0;
-            $ventas = DB::table('VENTA')
-                ->leftJoin('FACTURA', 'VENTA.id_factura', '=', 'FACTURA.id_factura')
-                ->leftJoin("PRODUCTO", "PRODUCTO.CODIGO", "=", "VENTA.CODIGO_PRODUCTO")
-                ->whereMonth('FACTURA.Fecha', date('m'))
-                ->select(DB::raw('DATE(FACTURA.Fecha) as fecha'), DB::raw('SUM(VENTA.total) as total_ventas') , 'PRODUCTO.NOMBRE')
-                ->groupBy(DB::raw('DATE(FACTURA.Fecha)'), 'PRODUCTO.NOMBRE' )
+            $ventas = DB::table("FACTURA")
+
+                ->whereBetween('FACTURA.FECHA', [
+                    date('Y-m-d', strtotime('-1 month')),  // Hace un mes desde hoy
+                    date('Y-m-d')  // Hoy
+                ])
                 ->get();
         
             $ventasPorFecha = [];
+
         
             foreach ($ventas as $item) {
-                $granTotal += $item->total_ventas;
+                $granTotal += $item->TOTAL;
         
                 // Organizar por fecha
-                $fechaVenta = date('Y-m-d', strtotime($item->fecha));
+                $fechaVenta = date('Y-m-d', strtotime($item->FECHA));
                 if (!isset($ventasPorFecha[$fechaVenta])) {
                     $ventasPorFecha[$fechaVenta] = [
-                        'total_ventas' => 0,
+                        'TOTAL' => 0,
                         'detalle' => [],
                     ];
                 }
         
-                $ventasPorFecha[$fechaVenta]['total_ventas'] += $item->total_ventas;
+                $ventasPorFecha[$fechaVenta]['TOTAL'] += $item->TOTAL;
         
                 // Detalles de productos vendidos
                 $ventasPorFecha[$fechaVenta]['detalle'][] = [
-                    'producto' => $item->NOMBRE,
-                    'total' => $item->total_ventas,
+
+                    'total' => $item->TOTAL,
                     // Otros campos que puedas necesitar
                 ];
             }
@@ -136,7 +137,7 @@ class VentasController extends Controller
             foreach ($ventasPorFecha as $fecha => $datos) {
                 $serie = [
                     'name' => $fecha,
-                    'value' => $datos['total_ventas'],
+                    'value' => $datos['TOTAL'],
                 ];
         
                 $respuestaChart[] = $serie;
@@ -456,18 +457,27 @@ class VentasController extends Controller
     public function finalizarVenta(Request $request){
         $idVenta= $request->idVenta;
 
-        $venta= DB::TABLE("VENTA")->where('ID_FACTURA',$idVenta)->get();
+        $venta= DB::TABLE("VENTA")->leftjoin("FACTURA as fac","fac.ID_FACTURA","=","VENTA.ID_FACTURA")->where('VENTA.ID_FACTURA',$idVenta)
+        ->select("VENTA.TOTAL","fac.ID_TIPO_PAGO as ID_TIPO_PAGO")->get();
+
+
 
         $totalVenta=0;
 
+        $tipoPago="";
         foreach($venta as $item){
             $totalVenta=$totalVenta+$item->TOTAL;
+            $tipoPago=$item->ID_TIPO_PAGO;
         }
+
+        if($tipoPago!="fiado"){
 
         $ventaActualizada= DB::TABLE("FACTURA")->where('ID_FACTURA',$idVenta)->update([
             'TOTAL'=>$totalVenta,
         ]);
-
+    }else{
+        return response()->json(['success' => false, 'message' => 'Se ha registrado venta como FIADO. Ve a la seccion Fiados cuando se ejecute el pago.'], 200);
+    }
         if($ventaActualizada){
             return response()->json(['success' => true, 'message' => 'Venta finalizada'], 200);
 
@@ -499,5 +509,52 @@ class VentasController extends Controller
             return response()->json(['success' => false, 'message' => 'No se pudo cancelar la venta'], 200);
         }
     }
+
+    public function getVentaFiada()
+    {
+        $facturas = DB::table("FACTURA")->where('FACTURA.ID_TIPO_PAGO', 'fiado')->get();
     
-}
+        foreach ($facturas as $factura) {
+            $idFactura = $factura->ID_FACTURA;
+            $ventas = DB::table("VENTA")->leftjoin("PRODUCTO as prod","prod.CODIGO","=","VENTA.CODIGO_PRODUCTO")->where('VENTA.ID_FACTURA', $idFactura)->select("VENTA.TOTAL as TOTAL","prod.NOMBRE as NOMBRE","VENTA.CANTIDAD")->get();
+            $total = 0;
+    
+            foreach ($ventas as $venta) {
+                $total += $venta->TOTAL;
+            }
+    
+            $factura->VENTA = $ventas;
+            $factura->TOTAL = $total;
+        }
+    
+        if ($facturas->isNotEmpty()) {
+            return response()->json(['success' => true, 'ventas' => $facturas], 200);
+        } else {
+            return response()->json(['success' => false, 'message' => 'No se encontraron ventas'], 200);
+        }
+    }
+
+        public function cobrarVentaFiada(Request $request){
+                $idFactura=$request->idFactura;
+                $total=$request->total;
+                $tipoDePago=$request->tipoPago;
+
+                $ventaActualizada= DB::TABLE("FACTURA")->where('ID_FACTURA',$idFactura)->update([
+                    'TOTAL'=>$total,
+                    'ID_TIPO_PAGO'=>$tipoDePago
+                ]);
+
+                if($ventaActualizada){
+
+                    
+
+                    return response()->json(['success' => true, 'message' => 'Venta cobrada'], 200);
+                }else{
+                    return response()->json(['success' => false, 'message' => 'No se pudo cobrar la venta'], 200);
+                }
+
+        }
+    }
+    
+    
+
