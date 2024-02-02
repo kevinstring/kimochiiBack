@@ -277,38 +277,41 @@ class webController extends Controller
     
 
     public function getMasVendidos(){
-        $ventas = DB::table("VENTA")->select("CODIGO_PRODUCTO", DB::raw("COUNT(CODIGO_PRODUCTO) as cantidad",))
-            ->groupBy("CODIGO_PRODUCTO")->orderBy("cantidad", "DESC")->limit(8)->get();
-    
-        $productos = [];
-    
-        foreach($ventas as $venta){
-            // Intenta obtener el producto correspondiente
-            $producto = DB::table("PRODUCTO")->where("CODIGO", $venta->CODIGO_PRODUCTO)->where("OCULTO",0)->first();
-           
-          
-            // Verifica si $producto es nulo antes de acceder a sus propiedades
-            if ($producto) {
-      $producto = $this->procesarFotos($producto);
-                // Accede a la propiedad 'cantidad' en lugar de 'CANTIDAD'
-                $producto->CANTIDAD = $venta->cantidad;
-    
-                // Utiliza la función procesarFotos para procesar las imágenes
-             
-    
-                array_push($productos, $producto);
-            }
-     
+
+
+        $productos = DB::table("PRODUCTO")->where("OCULTO",0)->where("FAVORITO",1)->inRandomOrder()->get();
+        
+ foreach($productos as $prod){
+        // $idFavorito=$prod->CODIGO;
+        // if (is_string($prod->FOTO)) {
+        //     $prod->FOTO = str_replace("https://kimochii.s3.amazonaws.com", '', $prod->FOTO);
+        // }
+        $prod->FOTO = json_decode($prod->FOTO);
+        if (is_array($prod->FOTO)) {
+            $prod->FOTO = array_map(function ($url) {
+                return [
+                    'image' => $url,
+                    'thumbImage' => $url, // Puedes ajustar esto según tus necesidades
+                    'alt' => 'alt of image',
+                
+                ];
+            }, $prod->FOTO);
+        } else {
+            // Si FOTO no es un array, puedes manejarlo de acuerdo a tus necesidades
+            $prod->FOTO = [];
         }
     
-        if(!empty($productos)){
+    }
+    
+        
+        if($productos){
             return response()->json(['success' => true, 'productos' => $productos], 200);
         } else {
             return response()->json(['success' => false, 'message' => 'No se encontraron productos'], 200);
         }
-    }
-    
-    // Agrega este método al controlador
+        }
+
+
 private function procesarFotos($productos) {
 
       
