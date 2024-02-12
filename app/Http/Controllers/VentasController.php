@@ -259,6 +259,7 @@ class VentasController extends Controller
             ->first();
     
         if ($productoRepetido) {
+
             // Actualizar la cantidad en la venta existente
             $comanda = DB::table("VENTA")
                 ->where('ID_FACTURA', $idVenta)
@@ -266,11 +267,18 @@ class VentasController extends Controller
                 ->update([
                     'CANTIDAD' => $cantidad,
                 ]);
+
+               
     
             // Obtener información del producto
             $productos = DB::table("PRODUCTO")
                 ->where('CODIGO', $codigoProducto)
                 ->first();
+
+
+
+
+
                 if ($talla == "M" || $talla === "L" || $talla === "S" || $talla === "XL" || $talla === "10" || $talla === "12" || $talla === "14") {
    
         
@@ -457,8 +465,28 @@ class VentasController extends Controller
     public function finalizarVenta(Request $request){
         $idVenta= $request->idVenta;
 
+        $getComanda=DB::table("VENTA")->where('ID_FACTURA',$idVenta)->leftjoin("PRODUCTO as prod","prod.CODIGO","=","VENTA.CODIGO_PRODUCTO")
+        ->select("VENTA.*","prod.ID_CATEGORIA","prod.ID_PROVEEDOR")->get()   ->toArray();;
+
+
+        $cantidadRepetidos = array_count_values(array_column($getComanda, 'CODIGO_PRODUCTO'));
+
+        foreach($cantidadRepetidos as $key=>$value){
+            $producto = DB::table("PRODUCTO")->where('CODIGO',$key)->select("ID_CATEGORIA","ID_PROVEEDOR")->first();
+
+            
+
+
+            $descuentos=DB::table("DESCUENTOS")->where('ID_TIENDA',$producto->ID_PROVEEDOR)->where('ID_CATEGORIA',$producto->ID_CATEGORIA)->where('TIPO_DESCUENTO','general')->get();
+
+             
+            //ME QUEDE VIENDO COMO HACER EL DESCUENTO AL FINALIZAR LA COMPRA. DEBERIA DE PODER HACERSE DE ESTA MANERA! KEVIN!!!!!!
+        }
+
         $venta= DB::TABLE("VENTA")->leftjoin("FACTURA as fac","fac.ID_FACTURA","=","VENTA.ID_FACTURA")->where('VENTA.ID_FACTURA',$idVenta)
         ->select("VENTA.TOTAL","fac.ID_TIPO_PAGO as ID_TIPO_PAGO")->get();
+
+
 
 
 
@@ -554,6 +582,43 @@ class VentasController extends Controller
                 }
 
         }
+
+        public function getDatosDescuento(){
+            $getTiendas=DB::table("PROVEEDORES")->get();
+
+            $getCategoria=DB::table("CATEGORIA")->get();
+
+            if($getTiendas && $getCategoria){
+                return response()->json(['success' => true, 'tiendas' => $getTiendas,'categorias'=>$getCategoria], 200);
+            }else{
+                return response()->json(['success' => false, 'message' => 'No se encontraron datos'], 200);
+            }
+
+        }
+
+        public function descuentosGeneral(Request $request){
+            $idTienda=$request->idTienda;
+            $idCategoria=$request->idCategoria;
+            $descuento=$request->montoADescontar;
+            $multiplo=$request->multiploGeneral;
+
+           $insertarADescuentos=DB::table("DESCUENTOS")->insert([
+                'ID_TIENDA'=>$idTienda,
+                'ID_CATEGORIA'=>$idCategoria,
+                'DESCUENTO'=>$descuento,
+                'MULTIPLO'=>$multiplo,
+                'TIPO_DESCUENTO'=>'general',
+                'ID_PRODUCTO'=>null
+            ]);
+
+            if($insertarADescuentos){
+                return response()->json(['success' => true, 'message' => 'Descuento general agregado'], 200);
+            }else{
+                return response()->json(['success' => false, 'message' => 'No se pudo agregar el descuento general'], 200);
+            }
+
+        }
+
     }
     
     

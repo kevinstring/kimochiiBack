@@ -184,10 +184,9 @@ class webController extends Controller
     }
     
 
-    public function buscar(Request $request){
-        $nombre = $request->busqueda;
-        $pagina = $request->pagina ?? 1; // Página por defecto si no se proporciona
-        $limit = 10;
+    public function buscar($nombre,$pagina){
+      
+        $limit = 8;
         $offset = ($pagina - 1) * $limit;
     
         $getProductos = DB::table("PRODUCTO")
@@ -229,15 +228,20 @@ class webController extends Controller
                         'title' => 'title of image'
                     ];
                 }, $prod->FOTO);
-            } else {
-                $prod->FOTO = [];
+        
+                if($prod->CANTIDAD==0){
+                    $prod->STOCK="AGOTADO";
+            }else{
+                $prod->STOCK="EN STOCK";
             }
-
-            if($prod->CANTIDAD==0){
-                $prod->STOCK="AGOTADO";
-        }else{
-            $prod->STOCK="EN STOCK";
-        }
+        
+        
+        
+            } else {
+                // Si FOTO no es un array, puedes manejarlo de acuerdo a tus necesidades
+                $prod->FOTO = [];
+        
+            }
         }
 
             
@@ -275,6 +279,7 @@ class webController extends Controller
         }
     }
     
+
 
     public function getMasVendidos(){
 
@@ -547,6 +552,103 @@ public function pasarelaRopa(){
 
 
 }
+
+public function getTags(){
+    $tags=DB::table("TAGS")->select("NOMBRE","ID_TAG")->get();
+
+    if($tags){
+        return response()->json(['success' => true, 'tags'=>$tags], 200);
+
+    }else{
+        return response()->json(['success' => false, 'message' => 'No se encontraron categorias'], 200);
+
+    }
+}
+
+public function getXTag($tag, $pagina){
+    $limit = 8;
+    $offset = ($pagina - 1) * $limit;
+     
+    $tags = DB::table("TAGS")->where("ID_TAG", $tag)->select("ID_TAG")->first();
+
+    $getProductos = DB::table("PRODUCTO")
+        ->where('PRODUCTO.OCULTO', 0)
+        ->select("PRODUCTO.ID_PRODUCTO", "PRODUCTO.NOMBRE", "PRODUCTO.PRECIO", "PRODUCTO.DESCRIPCION", "PRODUCTO.FOTO", "PRODUCTO.CANTIDAD as CANTIDAD", "PRODUCTO.CODIGO as CODIGO", "PRODUCTO.ID_TAG");
+
+      
+       
+
+        $productos = $getProductos->get();
+
+
+
+
+
+
+        $ids = [];
+
+        $productosgg=[];
+        foreach ($productos as $pro) {
+            if ($pro->ID_TAG !== null) { // Verifica si $pro->ID_TAG no es null
+                $pro->ID_TAG = json_decode($pro->ID_TAG);
+                
+                if(is_array($pro->ID_TAG)){
+                foreach ($pro->ID_TAG as $id) {
+                   if($id==$tag){
+                    $productos=$getProductos->limit($limit)->offset($offset)->get();
+                    array_push($productosgg,$pro);
+
+                    $cantidadDeProductos=  count($productosgg);
+                    $cantidadDePaginas=ceil($cantidadDeProductos/$limit);
+                   }
+                }
+            }
+        }
+        }
+
+        $productos=$productosgg;
+     
+
+ 
+
+
+    foreach ($productos as $prod) {
+        $prod->FOTO = json_decode($prod->FOTO);
+        if (is_array($prod->FOTO)) {
+            $prod->FOTO = array_map(function ($url) {
+                return [
+                    'image' => $url,
+                    'thumbImage' => $url, // Puedes ajustar esto según tus necesidades
+                    'alt' => 'alt of image',
+                    'title' => 'title of image'
+                ];
+            }, $prod->FOTO);
+        } else {
+            $prod->FOTO = [];
+        }
+
+        if ($prod->CANTIDAD == 0) {
+            $prod->STOCK = "AGOTADO";
+        } else {
+            $prod->STOCK = "EN STOCK";
+        }
+
+     
+    }
+
+    // $cantidadDeProductos = DB::table("PRODUCTO")
+    //     ->whereIn("ID_TAG", json_decode($tags->ID_TAG))
+    //     ->count();
+
+    // $cantidadDePaginas = ceil($cantidadDeProductos / $limit);
+
+    if ($productos) {
+        return response()->json(['success' => true, 'productos' => $productos, 'cantidadPaginas' => $cantidadDePaginas], 200);
+    } else {
+        return response()->json(['success' => false, 'message' => 'No se encontraron productos'], 200);
+    }
+}
+
 }
 
 

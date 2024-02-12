@@ -52,7 +52,7 @@ Route::get('getRopa','App\Http\Controllers\articulosController@getRopa');
 Route::get('getProveedoresInter','App\Http\Controllers\webController@getProveedoresInter');
 Route::get('getCategoriasW','App\Http\Controllers\webController@getCategoriasW');
 Route::post('getOneCategory','App\Http\Controllers\webController@getOneCategory');
-Route::post('buscar','App\Http\Controllers\webController@buscar');
+Route::get('buscar/{nombre}/{pagina}', 'App\Http\Controllers\webController@buscar');
 Route::get('getMasVendidos','App\Http\Controllers\webController@getMasVendidos');
 Route::post('getDetalleProducto','App\Http\Controllers\webController@getDetalleProducto');
 Route::post('getRecomendados','App\Http\Controllers\webController@getRecomendados');
@@ -62,6 +62,7 @@ Route::post('buscarPorUnAnime','App\Http\Controllers\webController@buscarPorUnAn
 Route::get('pasarelaRopa','App\Http\Controllers\webController@pasarelaRopa');
 Route::post('login','App\Http\Controllers\usuarioController@login');
 Route::post('idTiendaDevolucion','App\Http\Controllers\proveedoresController@idTiendaDevolucion');
+Route::get('getTags','App\Http\Controllers\webController@getTags');
 
 Route::post('ingresarDevolucion','App\Http\Controllers\proveedoresController@ingresarDevolucion');
 
@@ -69,3 +70,8 @@ Route::get('getVentaFiada','App\Http\Controllers\VentasController@getVentaFiada'
 
 Route::post('cobrarVentaFiada','App\Http\Controllers\VentasController@cobrarVentaFiada');
 
+Route::get('getXTag/{tag}/{pagina}','App\Http\Controllers\webController@getXTag');
+
+Route::get('getDatosDescuento','App\Http\Controllers\VentasController@getDatosDescuento');
+
+Route::post('descuentosGeneral','App\Http\Controllers\VentasController@descuentosGeneral');
