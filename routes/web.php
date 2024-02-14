@@ -75,3 +75,9 @@ Route::get('getXTag/{tag}/{pagina}','App\Http\Controllers\webController@getXTag'
 Route::get('getDatosDescuento','App\Http\Controllers\VentasController@getDatosDescuento');
 
 Route::post('descuentosGeneral','App\Http\Controllers\VentasController@descuentosGeneral');
+
+Route::post('postGasto','App\Http\Controllers\gastosController@postGasto');
+
+Route::get('getGastoYVentaTotal','App\Http\Controllers\gastosController@getGastoYVentaTotal');
+
+Route::post('getGastosPorTiempo','App\Http\Controllers\gastosController@getGastosPorTiempo');
