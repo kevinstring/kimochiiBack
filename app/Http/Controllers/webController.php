@@ -83,6 +83,8 @@ class webController extends Controller
         ->leftJoin("PERSONAJE as person", "person.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
         ->leftJoin("ANIME as an", "an.ID_ANIME", "=", "person.ID_ANIME")
         ->where('an.NOMBRE',$anime)
+        ->where('PRODUCTO.OCULTO',0 )
+
         ->count();
 
         $cantidadDePaginas=ceil($cantidadDeProductos/$limit);
@@ -257,6 +259,8 @@ class webController extends Controller
       ->leftJoin("PERSONAJE", "PERSONAJE.ID_PERSONAJE", "=", "PRODUCTO.ID_PERSONAJE")
       ->leftJoin("ANIME", "ANIME.ID_ANIME", "=", "PERSONAJE.ID_ANIME")
       ->leftJoin("CATEGORIA", "CATEGORIA.ID", "=", "PRODUCTO.ID_CATEGORIA")
+      ->where('PRODUCTO.OCULTO',0 )
+
       ->select(
           "PRODUCTO.ID_PRODUCTO",
           "PRODUCTO.NOMBRE",
@@ -356,7 +360,10 @@ public function getDetalleProducto(Request $request){
     $id=$request->id;
     $producto=DB::table("PRODUCTO")
     ->leftjoin("COLABORADORES as col","col.ID","=","PRODUCTO.ID_COLABORADOR")
-    ->where('PRODUCTO.NOMBRE',$id)->select("PRODUCTO.NOMBRE", "PRODUCTO.DESCRIPCION","PRODUCTO.PRECIO","PRODUCTO.FOTO","PRODUCTO.ID_TAG","PRODUCTO.CANTIDAD as CANTIDAD","PRODUCTO.ID_CATEGORIA as CATEGORIA","PRODUCTO.CODIGO as CODIGO","col.LINK","col.NOMBRE as NOMBRE_COLA")->first();
+    ->where('PRODUCTO.NOMBRE',$id)
+    ->where('PRODUCTO.OCULTO',0 )
+
+    ->select("PRODUCTO.NOMBRE", "PRODUCTO.DESCRIPCION","PRODUCTO.PRECIO","PRODUCTO.FOTO","PRODUCTO.ID_TAG","PRODUCTO.CANTIDAD as CANTIDAD","PRODUCTO.ID_CATEGORIA as CATEGORIA","PRODUCTO.CODIGO as CODIGO","col.LINK","col.NOMBRE as NOMBRE_COLA")->first();
    
     $producto->FOTO = json_decode($producto->FOTO);
     if (is_array($producto->FOTO)) {
@@ -449,7 +456,8 @@ public function getRecomendados(Request $request){
 
      
 
-$getTagss = DB::table("PRODUCTO")->select("ID_TAG")->get();
+$getTagss = DB::table("PRODUCTO")->select("ID_TAG")->where('PRODUCTO.OCULTO',0 )
+->get();
 
 // Decodificar cada ID_TAG dentro de la colección
 $getTags=[];
@@ -478,6 +486,8 @@ $productos = DB::table("PRODUCTO")
             $query->orWhereJsonContains("ID_TAG", $tags);
         }
     })
+    ->where('PRODUCTO.OCULTO',0 )
+
     // Agrega esta línea para obtener resultados aleatorios
     ->limit(5) // Agrega esta línea para obtener solo 5 resultados
     ->inRandomOrder()
@@ -523,7 +533,8 @@ $productos = DB::table("PRODUCTO")
 }
 
 public function pasarelaRopa(){
-    $getRopa=DB::table("PRODUCTO")->where("PRODUCTO.ID_CATEGORIA",22)->inRandomOrder()->take(5)->get();
+    $getRopa=DB::table("PRODUCTO")->where("PRODUCTO.ID_CATEGORIA",22)        ->where('PRODUCTO.OCULTO',0 )
+    ->inRandomOrder()->take(5)->get();
 
     foreach($getRopa as $ropa){
         $ropa->FOTO = json_decode($ropa->FOTO);

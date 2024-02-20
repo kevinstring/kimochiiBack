@@ -15,7 +15,8 @@ class VentasController extends Controller
 
 
         if($id_categoria==22){
-            $productos= DB::TABLE("PRODUCTO")->leftjoin("ROPA","ROPA.CODIGO", "=","PRODUCTO.CODIGO")->select("ROPA.T_S as TALLA_S","ROPA.T_M as TALLA_M","ROPA.T_L as TALLA_L","ROPA.T_XL as TALLA_XL","ROPA.T_10 as TALLA_10","ROPA.T_12 as TALLA_12","ROPA.T_14 as TALLA_14","PRODUCTO.CANTIDAD","PRODUCTO.CODIGO","PRODUCTO.FOTO")->where('PRODUCTO.ID_CATEGORIA',$id_categoria)->get();
+            $productos= DB::TABLE("PRODUCTO")->leftjoin("ROPA","ROPA.CODIGO", "=","PRODUCTO.CODIGO")->select("ROPA.T_S as TALLA_S","ROPA.T_M as TALLA_M","ROPA.T_L as TALLA_L","ROPA.T_XL as TALLA_XL","ROPA.T_10 as TALLA_10","ROPA.T_12 as TALLA_12","ROPA.T_14 as TALLA_14","PRODUCTO.CANTIDAD","PRODUCTO.CODIGO","PRODUCTO.FOTO","PRODUCTO.ID_PRODUCTO",
+            "PRODUCTO.ID_CATEGORIA")->where('PRODUCTO.ID_CATEGORIA',$id_categoria)->get();
         
             foreach ($productos as $producto) {
                 $cantidadTallaS = $producto->TALLA_S;
@@ -234,7 +235,7 @@ class VentasController extends Controller
                 }
     
             if ($ventas) {
-                return response()->json(['success' => true, 'ventas' => $ventas,'granTotal'=>$granTotal], 200);
+                return response()->json(['success' => true, 'chartData' => $ventas,'granTotal'=>$granTotal], 200);
             } else {
                 return response()->json(['success' => false, 'message' => 'No se encontraron ventas'], 200);
             }
@@ -244,9 +245,11 @@ class VentasController extends Controller
     public function postComanda(Request $request){
         $idVenta = $request->idVenta;
         $codigoProducto = $request->codigoProducto;
-        $cantidad = $request->cantidad;
+        $cantidade = $request->cantidad;
         $talla = $request->talla;
-    
+        $precio=$request->precio;
+        $contadorCategoria=$request->contadorCategoria;
+
         // Verificar si el producto ya está en la venta
         $productoRepetido = DB::table("VENTA")
             ->where('ID_FACTURA', $idVenta)
@@ -257,7 +260,25 @@ class VentasController extends Controller
             $ropas = DB::table("ROPA")
             ->where('CODIGO', $codigoProducto)
             ->first();
-    
+
+            if($talla==='x')
+    {
+
+        $comanda = DB::table("VENTA")->insert([
+            'ID_FACTURA' => $idVenta,
+            'CODIGO_PRODUCTO' => $codigoProducto,
+            'CANTIDAD' => $cantidade,
+            'TOTAL'=>$precio
+        ]);
+
+        if($comanda){
+            return response()->json(['success' => true, 'comanda' => $comanda, 'message' => "Comanda agregada"], 200);
+        }else{
+            return response()->json(['success' => false, 'message' => 'No se pudo agregar la comanda'], 200);
+        }
+
+
+    }
         if ($productoRepetido) {
 
             // Actualizar la cantidad en la venta existente
@@ -265,7 +286,7 @@ class VentasController extends Controller
                 ->where('ID_FACTURA', $idVenta)
                 ->where('CODIGO_PRODUCTO', $codigoProducto)
                 ->update([
-                    'CANTIDAD' => $cantidad,
+                    'CANTIDAD' => $cantidade,
                 ]);
 
                
@@ -277,10 +298,47 @@ class VentasController extends Controller
 
 
 
+    // $getDescuento=db::table("DESCUENTOS")
+    // ->leftjoin("PROVEEDORES as prov","prov.ID_PROVEEDOR","=","DESCUENTOS.ID_TIENDA")
+    // ->leftjoin("PRODUCTO as prod","prod.ID_PROVEEDOR","=","prov.ID_PROVEEDOR")
+    // ->select("DESCUENTOS.*")
+    // ->where("prod.CODIGO",$codigoProducto)
+    // ->first();
+
+
+    // $precioProductoConDescuento=0;
+
+
+                    // if($getDescuento){
+
+                    //     $precioProductoConDescuento=0;
+
+
+
+                    //     if($contadorCategoria===$getDescuento->MULTIPLO){
+                    //         return $contadorCategoria;
+                    //     //AQUI HAY QUE TOMAR EL PRECIO DE ESE PRODUCTO Y DESCONTARLE EL PROCENTAJE QUE SE PUSO EN LA TABLA DESCUENTOS
+                    //     //Y LUEGO RESETEAR EL CONTADOR. GG.
+                    //     $precioProducto=$productos->PRECIO;
+                    //     $descuento=$getDescuento->DESCUENTO;
+
+                    //     $precioProductoConDescuento=$descuento;
+
+                    //     $contadorParaDescuento=0;
+
+
+
+
+                    //     }
+
+                    // }
+
+
 
 
                 if ($talla == "M" || $talla === "L" || $talla === "S" || $talla === "XL" || $talla === "10" || $talla === "12" || $talla === "14") {
    
+
         
                     $nombreCampo = 'T_' . $talla;
         
@@ -316,7 +374,19 @@ class VentasController extends Controller
 
     
             // Calcular el nuevo total de la venta
-            $totalVenta = $productos->PRECIO * $cantidad;
+
+
+            $totalVenta=0;
+
+            if ($productos) {
+                // El producto fue encontrado, puedes acceder a sus propiedades
+                $totalVenta = $productos->PRECIO * $cantidade;
+                
+                // Resto del código...
+            }
+             
+
+            // $totalVenta=$totalVenta-$precioProductoConDescuento;
     
             // Actualizar el total en la venta
        
@@ -378,10 +448,12 @@ class VentasController extends Controller
             }
         } else {
             // Si el producto no está en la venta, agregar una nueva entrada
+
+
             $comanda = DB::table("VENTA")->insert([
                 'ID_FACTURA' => $idVenta,
                 'CODIGO_PRODUCTO' => $codigoProducto,
-                'CANTIDAD' => $cantidad,
+                'CANTIDAD' => $cantidade,
             ]);
 
 
@@ -394,7 +466,7 @@ class VentasController extends Controller
         
         if ($productos) {
             // El producto fue encontrado, puedes acceder a sus propiedades
-            $totalVenta = $productos->PRECIO * $cantidad;
+            $totalVenta = $productos->PRECIO * $cantidade;
             
             // Resto del código...
         } else {
@@ -416,7 +488,7 @@ class VentasController extends Controller
                 return response()->json(['success' => false, 'message' => 'No hay suficientes productos en stock'], 200);
             } else {
                 // Actualizar la cantidad de productos en stock
-                $nuevaCantidad = $productos->CANTIDAD - $cantidad;
+                $nuevaCantidad = $productos->CANTIDAD - $cantidade;
                 $productoActualizado = DB::table("PRODUCTO")
                     ->where('CODIGO', $codigoProducto)
                     ->update([
@@ -460,63 +532,78 @@ class VentasController extends Controller
             }
         }
     }
+  
+    
+    
     
 
-    public function finalizarVenta(Request $request){
-        $idVenta= $request->idVenta;
-
-        $getComanda=DB::table("VENTA")->where('ID_FACTURA',$idVenta)->leftjoin("PRODUCTO as prod","prod.CODIGO","=","VENTA.CODIGO_PRODUCTO")
-        ->select("VENTA.*","prod.ID_CATEGORIA","prod.ID_PROVEEDOR")->get()   ->toArray();;
-
-
-        $cantidadRepetidos = array_count_values(array_column($getComanda, 'CODIGO_PRODUCTO'));
-
-        foreach($cantidadRepetidos as $key=>$value){
-            $producto = DB::table("PRODUCTO")->where('CODIGO',$key)->select("ID_CATEGORIA","ID_PROVEEDOR")->first();
-
-            
-
-
-            $descuentos=DB::table("DESCUENTOS")->where('ID_TIENDA',$producto->ID_PROVEEDOR)->where('ID_CATEGORIA',$producto->ID_CATEGORIA)->where('TIPO_DESCUENTO','general')->get();
-
-             
-            //ME QUEDE VIENDO COMO HACER EL DESCUENTO AL FINALIZAR LA COMPRA. DEBERIA DE PODER HACERSE DE ESTA MANERA! KEVIN!!!!!!
+    public function finalizarVenta(Request $request) {
+        $idVenta = $request->idVenta;
+    
+        $getComanda = DB::table("VENTA")->where('ID_FACTURA', $idVenta)
+            ->leftjoin("PRODUCTO as prod", "prod.CODIGO", "=", "VENTA.CODIGO_PRODUCTO")
+            ->select("VENTA.*", "prod.ID_CATEGORIA", "prod.ID_PROVEEDOR", "prod.CODIGO", "prod.ID_PRODUCTO", "VENTA.TOTAL as TOTAL")
+            ->get()
+            ->toArray();
+    
+        $codigoConSusCantidades = [];
+    
+        foreach ($getComanda as $item) {
+            $codigoConSusCantidades[$item->CODIGO] = $item->CANTIDAD;
         }
-
+    
+        // foreach ($codigoConSusCantidades as $key => $value) {
+        //     $producto = DB::table("PRODUCTO")->where('CODIGO', $key)->select("ID_CATEGORIA", "ID_PROVEEDOR")->first();
+        //     $descuentos = DB::table("DESCUENTOS")
+        //         ->where('ID_TIENDA', $producto->ID_PROVEEDOR)
+        //         ->where('ID_CATEGORIA', $producto->ID_CATEGORIA)
+        //         ->where('TIPO_DESCUENTO', 'general')
+        //         ->first();
+    
+        //     if ($descuentos) {
+        //         $descuento = $descuentos->DESCUENTO;
+        //         $multiplo = $descuentos->MULTIPLO;
+    
+        //         $contador = 0;
+        //         while ($contador < $value) {
+        //             // Calcular la cantidad con descuento solo si es un múltiplo
+        //             if (($contador + 1) % $multiplo === 0) {
+        //                 $codigoConSusCantidades[$key] -= $descuento;
+        //             }
+        //             $contador++;
+        //         }
+        //     }
+        // }
+    
+        $cantidadRepetidos = array_count_values(array_column($getComanda, 'VENTA.CODIGO'));
+    
+        // Continuar con el resto del código...
+    
+        $totalVenta = 0;
         $venta= DB::TABLE("VENTA")->leftjoin("FACTURA as fac","fac.ID_FACTURA","=","VENTA.ID_FACTURA")->where('VENTA.ID_FACTURA',$idVenta)
         ->select("VENTA.TOTAL","fac.ID_TIPO_PAGO as ID_TIPO_PAGO")->get();
-
-
-
-
-
-        $totalVenta=0;
-
-        $tipoPago="";
-        foreach($venta as $item){
-            $totalVenta=$totalVenta+$item->TOTAL;
-            $tipoPago=$item->ID_TIPO_PAGO;
+        $tipoPago = "";
+        foreach ($venta as $item) {
+            $totalVenta = $totalVenta + $item->TOTAL;
+            $tipoPago = $item->ID_TIPO_PAGO;
         }
-
-        if($tipoPago!="fiado"){
-
-        $ventaActualizada= DB::TABLE("FACTURA")->where('ID_FACTURA',$idVenta)->update([
-            'TOTAL'=>$totalVenta,
-        ]);
-    }else{
-        return response()->json(['success' => false, 'message' => 'Se ha registrado venta como FIADO. Ve a la seccion Fiados cuando se ejecute el pago.'], 200);
-    }
-        if($ventaActualizada){
+    
+        if ($tipoPago != "fiado") {
+            $ventaActualizada = DB::table("FACTURA")->where('ID_FACTURA', $idVenta)->update([
+                'TOTAL' => $totalVenta,
+            ]);
+        } else {
+            return response()->json(['success' => false, 'message' => 'Se ha registrado venta como FIADO. Ve a la seccion Fiados cuando se ejecute el pago.'], 200);
+        }
+    
+        if ($ventaActualizada) {
             return response()->json(['success' => true, 'message' => 'Venta finalizada'], 200);
-
-        }else{
-
+        } else {
             return response()->json(['success' => false, 'message' => 'No se pudo finalizar la venta'], 200);
-
         }
-
-
     }
+    
+    
 
     public function cancelarVentaYFacturar(Request $request){
         $idVenta = $request->idVenta;
@@ -588,8 +675,11 @@ class VentasController extends Controller
 
             $getCategoria=DB::table("CATEGORIA")->get();
 
+            $getDescuentosCreados= db::table("DESCUENTOS")->leftjoin("PROVEEDORES as pro","pro.ID_PROVEEDOR","=",
+            "DESCUENTOS.ID_TIENDA")->select("pro.NOMBRE_TIENDA","DESCUENTOS.*")->get();
+
             if($getTiendas && $getCategoria){
-                return response()->json(['success' => true, 'tiendas' => $getTiendas,'categorias'=>$getCategoria], 200);
+                return response()->json(['success' => true, 'tiendas' => $getTiendas,'categorias'=>$getCategoria,'descuentos'=>$getDescuentosCreados], 200);
             }else{
                 return response()->json(['success' => false, 'message' => 'No se encontraron datos'], 200);
             }
@@ -602,20 +692,59 @@ class VentasController extends Controller
             $descuento=$request->montoADescontar;
             $multiplo=$request->multiploGeneral;
 
-           $insertarADescuentos=DB::table("DESCUENTOS")->insert([
-                'ID_TIENDA'=>$idTienda,
-                'ID_CATEGORIA'=>$idCategoria,
-                'DESCUENTO'=>$descuento,
-                'MULTIPLO'=>$multiplo,
-                'TIPO_DESCUENTO'=>'general',
-                'ID_PRODUCTO'=>null
-            ]);
+            $verTiendasDescuentos=DB::table("DESCUENTOS")->where('ID_TIENDA',$idTienda)->get();
 
-            if($insertarADescuentos){
-                return response()->json(['success' => true, 'message' => 'Descuento general agregado'], 200);
-            }else{
-                return response()->json(['success' => false, 'message' => 'No se pudo agregar el descuento general'], 200);
+            if(
+                $verTiendasDescuentos->isNotEmpty()
+            ){
+                $verTiendasDescuentos=DB::table("DESCUENTOS")->where('ID_TIENDA',$idTienda)->where('ID_CATEGORIA',$idCategoria)->where('TIPO_DESCUENTO','general')->get();
+
+                if($verTiendasDescuentos->isNotEmpty()){
+                    $actualizarDescuento=DB::table("DESCUENTOS")->where('ID_TIENDA',$idTienda)->where('ID_CATEGORIA',$idCategoria)->where('TIPO_DESCUENTO','general')->update([
+                        'DESCUENTO'=>$descuento,
+                        'MULTIPLO'=>$multiplo
+                    ]);
+
+                    if($actualizarDescuento){
+                        return response()->json(['success' => true, 'message' => 'Descuento general actualizado'], 200);
+                    }else{
+                        return response()->json(['success' => false, 'message' => 'No se pudo actualizar el descuento general'], 200);
+                    }
+                }else{
+                    $insertarADescuentos=DB::table("DESCUENTOS")->insert([
+                        'ID_TIENDA'=>$idTienda,
+                        'ID_CATEGORIA'=>$idCategoria,
+                        'DESCUENTO'=>$descuento,
+                        'MULTIPLO'=>$multiplo,
+                        'TIPO_DESCUENTO'=>'general',
+                        'ID_PRODUCTO'=>null
+                    ]);
+
+                    if($insertarADescuentos){
+                        return response()->json(['success' => true, 'message' => 'Descuento general agregado'], 200);
+                    }else{
+                        return response()->json(['success' => false, 'message' => 'No se pudo agregar el descuento general'], 200);
+                    }
+                }
             }
+
+                
+            
+
+        //    $insertarADescuentos=DB::table("DESCUENTOS")->insert([
+        //         'ID_TIENDA'=>$idTienda,
+        //         'ID_CATEGORIA'=>$idCategoria,
+        //         'DESCUENTO'=>$descuento,
+        //         'MULTIPLO'=>$multiplo,
+        //         'TIPO_DESCUENTO'=>'general',
+        //         'ID_PRODUCTO'=>null
+        //     ]);
+
+        //     if($insertarADescuentos){
+        //         return response()->json(['success' => true, 'message' => 'Descuento general agregado'], 200);
+        //     }else{
+        //         return response()->json(['success' => false, 'message' => 'No se pudo agregar el descuento general'], 200);
+        //     }
 
         }
 

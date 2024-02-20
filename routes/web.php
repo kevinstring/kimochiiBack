@@ -49,6 +49,7 @@ Route::get('getSatisfaccion','App\Http\Controllers\PedidosController@getSatisfac
 Route::post('valorarPedido ','App\Http\Controllers\PedidosController@valorarPedido');
 Route::get('getPedidos','App\Http\Controllers\PedidosController@getPedidos');
 Route::get('getRopa','App\Http\Controllers\articulosController@getRopa');
+Route::post('getRopaTalla','App\Http\Controllers\articulosController@getRopaTalla');
 Route::get('getProveedoresInter','App\Http\Controllers\webController@getProveedoresInter');
 Route::get('getCategoriasW','App\Http\Controllers\webController@getCategoriasW');
 Route::post('getOneCategory','App\Http\Controllers\webController@getOneCategory');

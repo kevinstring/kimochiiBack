@@ -158,7 +158,7 @@ $tresLetras1 = "";
         ->get();
         $ropa = DB::table('ROPA')
         ->leftjoin("CATEGORIA as subcat", "subcat.ID", "=", "ROPA.ID_SUBCATEGORIA")
-        ->select("ROPA.ID as ID_PRODUCTO", "ROPA.CODIGO as CODIGO", "subcat.NOMBRE as NOMBRE_SUBCAT", "ROPA.NOMBRE as NOMBRE_PRODUCTO", "ROPA.FOTO", "ROPA.DESCRIPCION", "ROPA.COSTO", "ROPA.PRECIO", "ROPA.S as TALLA_S", "ROPA.M as TALLA_M", "ROPA.L as TALLA_L")
+        ->select("ROPA.ID as ID_PRODUCTO", "ROPA.CODIGO as CODIGO", "subcat.NOMBRE as NOMBRE_SUBCAT", "ROPA.NOMBRE as NOMBRE_PRODUCTO", "ROPA.FOTO", "ROPA.DESCRIPCION", "ROPA.COSTO", "ROPA.PRECIO", "ROPA.T_S as T_S", "ROPA.T_M as T_M", "ROPA.T_L as T_L", "ROPA.T_XL as T_XL", "ROPA.T_10 as T_10", "ROPA.T_12 as T_12", "ROPA.T_14 as T_14")
         ->get();
     
         $favorito=DB::table('FAVORITOS')->get();
@@ -209,9 +209,13 @@ $tresLetras1 = "";
     
 
     foreach ($ropa as $producto) {
-        $cantidadTallaS = $producto->TALLA_S;
-        $cantidadTallaM = $producto->TALLA_M;
-        $cantidadTallaL = $producto->TALLA_L;
+        $cantidadTallaS = $producto->T_S;
+        $cantidadTallaM = $producto->T_M;
+        $cantidadTallaL = $producto->T_L;
+            $cantidadTallaXL = $producto->T_XL;
+            $cantidadTalla10 = $producto->T_10;
+            $cantidadTalla12 = $producto->T_12;
+            $cantidadTalla14 = $producto->T_14;
     
         $cantidadRopa = array_sum([$cantidadTallaS, $cantidadTallaM, $cantidadTallaL]);
 
@@ -358,11 +362,61 @@ public function postFavorito(Request $request){
         return response()->json(["error" => "Error al agregar"], 422);
     }
 }
+public function getRopaTalla(Request $request)
+{
+    $talla = $request->talla;
+
+    if($talla==='n'){
+        $ropa = DB::table('ROPA')
+        ->leftjoin("CATEGORIA as subcat", "subcat.ID", "=", "ROPA.ID_SUBCATEGORIA")
+        ->leftjoin("PRODUCTO as prod", "prod.CODIGO", "=", "ROPA.CODIGO")
+        ->select("ROPA.ID as ID_PRODUCTO", "ROPA.CODIGO as CODIGO", "subcat.NOMBRE as NOMBRE_SUBCAT", "ROPA.NOMBRE as NOMBRE_PRODUCTO", "ROPA.FOTO", "ROPA.DESCRIPCION", "ROPA.COSTO", "ROPA.PRECIO", "ROPA.T_S as TALLA_S", "ROPA.T_M as TALLA_M", "ROPA.T_L as TALLA_L", "ROPA.T_XL as TALLA_XL", "ROPA.T_10 as TALLA_10", "ROPA.T_12 as TALLA_12", "ROPA.T_14 as TALLA_14")
+        ->get();
+
+        return response()->json(["ropa" => $ropa]);
+
+    }else{
+
+    $ropa = DB::table('ROPA')
+        ->leftjoin("CATEGORIA as subcat", "subcat.ID", "=", "ROPA.ID_SUBCATEGORIA")
+        ->leftjoin("PRODUCTO as prod", "prod.CODIGO", "=", "ROPA.CODIGO")
+        ->select("ROPA.ID as ID_PRODUCTO", "ROPA.CODIGO as CODIGO", "subcat.NOMBRE as NOMBRE_SUBCAT", "ROPA.NOMBRE as NOMBRE_PRODUCTO", "ROPA.FOTO", "ROPA.DESCRIPCION", "ROPA.COSTO", "ROPA.PRECIO", "ROPA.T_S as TALLA_S", "ROPA.T_M as TALLA_M", "ROPA.T_L as TALLA_L", "ROPA.T_XL as TALLA_XL", "ROPA.T_10 as TALLA_10", "ROPA.T_12 as TALLA_12", "ROPA.T_14 as TALLA_14")
+        ->where("T_$talla", ">", 0)  // Filtrar por la talla seleccionada
+        ->get();
+return response()->json(["ropa" => $ropa]);
+    }
+    foreach ($ropa as $producto) {
+
+        $cantidadRopa = property_exists($producto, 'T_' . $talla) ? $producto->{'T_' . $talla} : 0;
+
+        // Agregar la cantidad total al objeto producto
+        $producto->CANTIDAD = $cantidadRopa;
+
+        // Agregar las cantidades por talla al array TALLAS dentro del objeto producto
+        $producto->TALLAS = [
+            $talla => $cantidadRopa
+        ];
+
+        $producto->FOTO = json_decode($producto->FOTO);
+    }
+
+    return response()->json(["ropa" => $ropa]);
+}
+
+
+
+
+
+
+
+
+
 
 public function getRopa(){
     $ropa = DB::table('ROPA')
     ->leftjoin("CATEGORIA as subcat", "subcat.ID", "=", "ROPA.ID_SUBCATEGORIA")
-    ->select("ROPA.ID as ID_PRODUCTO", "ROPA.CODIGO as CODIGO", "subcat.NOMBRE as NOMBRE_SUBCAT", "ROPA.NOMBRE as NOMBRE_PRODUCTO", "ROPA.FOTO", "ROPA.DESCRIPCION", "ROPA.COSTO", "ROPA.PRECIO", "ROPA.S as TALLA_S", "ROPA.M as TALLA_M", "ROPA.L as TALLA_L", "ROPA.XL as TALLA_XL", "ROPA.10 as TALLA_10", "ROPA.12 as TALLA_12", "ROPA.14 as TALLA_14")
+    ->leftjoin("PRODUCTO as prod", "prod.CODIGO", "=", "ROPA.CODIGO")
+    ->select("ROPA.ID as ID_PRODUCTO" ,"ROPA.CODIGO as CODIGO", "subcat.NOMBRE as NOMBRE_SUBCAT", "ROPA.NOMBRE as NOMBRE_PRODUCTO", "ROPA.FOTO", "ROPA.DESCRIPCION", "ROPA.COSTO", "ROPA.PRECIO", "ROPA.S as TALLA_S", "ROPA.M as TALLA_M", "ROPA.L as TALLA_L", "ROPA.XL as TALLA_XL", "ROPA.10 as TALLA_10", "ROPA.12 as TALLA_12", "ROPA.14 as TALLA_14")
     ->get();
 
 
