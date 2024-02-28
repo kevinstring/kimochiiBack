@@ -82,3 +82,5 @@ Route::post('postGasto','App\Http\Controllers\gastosController@postGasto');
 Route::get('getGastoYVentaTotal','App\Http\Controllers\gastosController@getGastoYVentaTotal');
 
 Route::post('getGastosPorTiempo','App\Http\Controllers\gastosController@getGastosPorTiempo');
+
+Route::get('getSeccionSublimaciones','App\Http\Controllers\webController@getSeccionSublimaciones');

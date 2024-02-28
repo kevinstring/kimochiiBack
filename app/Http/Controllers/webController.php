@@ -660,6 +660,60 @@ public function getXTag($tag, $pagina){
     }
 }
 
+public function getSeccionSublimaciones()
+{
+    $sublimaciones = DB::table("PRODUCTO")->where("ID_CATEGORIA",24)->select("PRODUCTO.CODIGO","PRODUCTO.ID_PRODUCTO","PRODUCTO.FOTO","PRODUCTO.NOMBRE","PRODUCTO.PRECIO")->get();
+
+
+    $tiposSublimados = [
+        "tazas" => [],
+        "gorras" => [],
+        "playeras" => [],
+        "mousepad" => [],
+    ];
+    
+    foreach ($sublimaciones as $subli) {
+
+            //foto
+            $subli->FOTO = json_decode($subli->FOTO);
+            if (is_array($subli->FOTO)) {
+                $subli->FOTO = array_map(function ($url) {
+                    return [
+                        'image' => $url,
+                        'thumbImage' => $url, // Puedes ajustar esto según tus necesidades
+                        'alt' => 'alt of image',
+                        'title' => 'title of image'
+                    ];
+                }, $subli->FOTO);
+            } else {
+                $subli->FOTO = [];
+            }
+
+            
+
+        $nombre = strtolower($subli->NOMBRE);
+    
+        if (stripos($nombre, "taza") !== false) {
+            $tiposSublimados["tazas"][] = $subli; 
+        } elseif (stripos($nombre, "gorra") !== false) {
+            $tiposSublimados["gorras"][] = $subli;
+        } elseif (stripos($nombre, "playera") !== false) {
+            $tiposSublimados["playeras"][] = $subli;
+        } elseif (stripos($nombre, "mousepad") !== false) {
+            $tiposSublimados["mousepad"][] = $subli;
+        }
+    }
+    
+    
+
+
+    if ($sublimaciones->isNotEmpty()) {
+        return response()->json(['success' => true, 'sublimaciones' => $sublimaciones,'tiposSubli'=>$tiposSublimados], 200);
+    } else {
+        return response()->json(['success' => false, 'message' => 'No se encontraron sublimaciones'], 200);
+    }
+}
+
 }
 
 
